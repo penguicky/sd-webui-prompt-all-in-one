@@ -988,21 +988,7 @@ export default {
       );
     },
 
-    /**
-     * Handle mouse enter event on individual category term wrapper
-     *
-     * This method enables interaction with individual terms within category declarations
-     * like {category: term1, term2, term3}. When a user hovers over a specific term,
-     * it captures the term data, calculates positioning, and shows the weight control menu.
-     *
-     * Key Features:
-     * - Detects hover over individual terms within categories
-     * - Calculates precise positioning for dynamic menu placement
-     * - Integrates with existing btn-tag-extend menu system
-     * - Preserves category structure during term modifications
-     *
-     * @param {MouseEvent} event - The mouse enter event from category term wrapper
-     */
+    // Handle mouse enter on category terms
     _onCategoryTermMouseEnter(event) {
       const target = event.target;
       const termWrapper = target.closest(".category-term-wrapper");
@@ -1048,15 +1034,7 @@ export default {
       }
     },
 
-    /**
-     * Handle mouse leave event on individual category term wrapper
-     *
-     * This method cleans up the category term hover state when the user moves
-     * the mouse away from an individual term. It ensures proper cleanup of
-     * hover data and menu state.
-     *
-     * @param {MouseEvent} event - The mouse leave event from category term wrapper
-     */
+    // Handle mouse leave on category terms
     _onCategoryTermMouseLeave(event) {
       const target = event.target;
       const termWrapper = target.closest(".category-term-wrapper");
@@ -1118,25 +1096,7 @@ export default {
       return weightNum || 1.0;
     },
 
-    /**
-     * Modify individual term within a category declaration while preserving structure
-     *
-     * This method handles weight modifications for individual terms within category
-     * declarations like {category: term1, term2, term3}. It parses the category,
-     * modifies the specific term, and reconstructs the category while maintaining
-     * the overall structure and other terms.
-     *
-     * Supported Actions:
-     * - "inc": Increase weight using parentheses (term) or {term} for NovelAI
-     * - "dec": Decrease weight using brackets [term]
-     * - "set": Set specific weight using colon syntax (term:1.2)
-     *
-     * @param {Object} tag - The parent category tag object
-     * @param {number} termIndex - Index of the term within the category
-     * @param {string} originalTermValue - Original value of the term being modified
-     * @param {string} action - Type of modification: "inc", "dec", or "set"
-     * @param {number} value - Weight value or increment/decrement amount
-     */
+    // Modify individual term within a category declaration
     _modifyCategoryTerm(tag, termIndex, originalTermValue, action, value) {
       const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
       const match = tag.value.match(categoryRegex);
@@ -1150,34 +1110,57 @@ export default {
 
       let modifiedTerm = terms[termIndex];
 
+      // Detect term type to preserve syntax highlighting
+      const isLoRA =
+        modifiedTerm.match(common.loraRegex) ||
+        modifiedTerm.match(common.lycoRegex);
+      const isEmbedding =
+        !isLoRA &&
+        this.embeddingExists &&
+        this.embeddingExists(this._extractBaseTerm(modifiedTerm)) !== false;
+
       // Apply weight modification based on action
       switch (action) {
         case "inc":
-          // Add parentheses for emphasis
-          if (this.useNovelAiWeightSymbol) {
-            modifiedTerm = common.setLayers(modifiedTerm, value, "{", "}");
+          // For LoRA terms, use their internal weight syntax
+          if (isLoRA) {
+            modifiedTerm = this._modifyLoRAWeight(modifiedTerm, "inc", value);
           } else {
-            modifiedTerm = common.setLayers(modifiedTerm, value, "(", ")");
+            // For embeddings and regular terms, use standard weight syntax
+            if (this.useNovelAiWeightSymbol) {
+              modifiedTerm = common.setLayers(modifiedTerm, value, "{", "}");
+            } else {
+              modifiedTerm = common.setLayers(modifiedTerm, value, "(", ")");
+            }
           }
           break;
 
         case "dec":
-          // Add brackets for de-emphasis
-          modifiedTerm = common.setLayers(modifiedTerm, value, "[", "]");
+          // For LoRA terms, use their internal weight syntax
+          if (isLoRA) {
+            modifiedTerm = this._modifyLoRAWeight(modifiedTerm, "dec", value);
+          } else {
+            // For embeddings and regular terms, use standard weight syntax
+            modifiedTerm = common.setLayers(modifiedTerm, value, "[", "]");
+          }
           break;
 
         case "set":
-          // Set specific weight using colon syntax
-          // Remove existing weight syntax first
-          modifiedTerm = modifiedTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
-          modifiedTerm = modifiedTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
+          // For LoRA terms, modify their internal weight
+          if (isLoRA) {
+            modifiedTerm = this._modifyLoRAWeight(modifiedTerm, "set", value);
+          } else {
+            // For embeddings and regular terms, use standard colon syntax
+            // Remove existing weight syntax first
+            modifiedTerm = this._removeWeightSyntax(modifiedTerm);
 
-          if (value !== 1.0 && value !== 1) {
-            // Apply new weight with colon syntax
-            if (this.useNovelAiWeightSymbol) {
-              modifiedTerm = `{${modifiedTerm}:${value}}`;
-            } else {
-              modifiedTerm = `(${modifiedTerm}:${value})`;
+            if (value !== 1.0 && value !== 1) {
+              // Apply new weight with colon syntax
+              if (this.useNovelAiWeightSymbol) {
+                modifiedTerm = `{${modifiedTerm}:${value}}`;
+              } else {
+                modifiedTerm = `(${modifiedTerm}:${value})`;
+              }
             }
           }
           break;
@@ -1197,10 +1180,84 @@ export default {
       // Update hover data with new term value
       this.categoryTermHoverData.termValue = modifiedTerm;
 
-      // Re-setup listeners after DOM update
+      // Force re-render to ensure syntax highlighting is updated
       this.$nextTick(() => {
+        // Re-apply tag classes to ensure proper syntax highlighting
+        this._setTagClass(tag);
+
+        // Force custom colors to be applied if available
+        if (this._applyCustomColorsToTags) {
+          this._applyCustomColorsToTags();
+        }
+
+        // Re-setup listeners after DOM update
         this._setupCategoryTermHoverListeners();
       });
+    },
+
+    // Helper function to extract base term from weighted syntax
+    _extractBaseTerm(term) {
+      // Remove weight brackets and colon syntax
+      let baseTerm = term;
+
+      // Remove outer weight brackets: (term), [term], {term}
+      baseTerm = baseTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
+
+      // Remove colon weight syntax: term:1.2
+      baseTerm = baseTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
+
+      return baseTerm.trim();
+    },
+
+    // Helper function to remove weight syntax while preserving term type
+    _removeWeightSyntax(term) {
+      let cleanTerm = term;
+
+      // Remove outer weight brackets: (term), [term], {term}
+      cleanTerm = cleanTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
+
+      // Remove colon weight syntax: term:1.2
+      cleanTerm = cleanTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
+
+      return cleanTerm.trim();
+    },
+
+    // Helper function to modify LoRA weight syntax properly
+    _modifyLoRAWeight(loraTerm, action, value) {
+      // Parse LoRA syntax: <lora:name:weight> or <lyco:name:weight>
+      const loraMatch = loraTerm.match(/^<(lora|lyco):([^:>]+)(?::([^>]+))?>$/);
+
+      if (!loraMatch) {
+        // If it's not a proper LoRA format, treat as regular term
+        return loraTerm;
+      }
+
+      const [, type, name, currentWeight] = loraMatch;
+      let newWeight = currentWeight ? parseFloat(currentWeight) : 1.0;
+
+      switch (action) {
+        case "inc":
+          newWeight += value || 0.1;
+          break;
+        case "dec":
+          newWeight -= value || 0.1;
+          newWeight = Math.max(0.1, newWeight); // Prevent negative weights
+          break;
+        case "set":
+          newWeight = value;
+          break;
+      }
+
+      // Round to 1 decimal place
+      newWeight = Math.round(newWeight * 10) / 10;
+
+      // Reconstruct LoRA syntax
+      if (newWeight === 1.0) {
+        // If weight is 1.0, we can omit it for cleaner syntax
+        return `<${type}:${name}>`;
+      } else {
+        return `<${type}:${name}:${newWeight}>`;
+      }
     },
   },
 };

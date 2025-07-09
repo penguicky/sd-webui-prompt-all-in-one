@@ -252,6 +252,80 @@
     </div>
 
     <div class="test-section">
+      <h2>Test 7: Bug Fix - Embedding Syntax Highlighting Preservation</h2>
+      <p>
+        Expected: Embeddings should maintain blue highlighting after weight
+        modifications
+      </p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">style</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-7-0"
+          data-term-value="embedding_name"
+          data-term-index="0"
+          ><span class="embedding-content">embedding_name</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-7-1"
+          data-term-value="(another_embedding:1.2)"
+          data-term-index="1"
+          ><span class="weight-punctuation">(</span
+          ><span class="embedding-content">another_embedding</span
+          ><span class="weight-punctuation">:</span
+          ><span class="weight-value-boost">1.2</span
+          ><span class="weight-punctuation">)</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+      <p>
+        <small
+          >Note: Both terms should remain blue (embedding color) even after
+          weight modifications.</small
+        >
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 8: Bug Fix - LoRA Weight Formatting</h2>
+      <p>
+        Expected: LoRA terms with existing weights should not get double weight
+        syntax
+      </p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">quality</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-8-0"
+          data-term-value="Masterpiece_Sd_HDA"
+          data-term-index="0"
+          ><span class="character">Masterpiece_Sd_HDA</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-8-1"
+          data-term-value="&lt;lora:touching_grass_v0.2_1566707:1.2&gt;"
+          data-term-index="1"
+          ><span class="weight-punctuation">&lt;</span
+          ><span class="lora-content">lora:touching_grass_v0.2_1566707:1.2</span
+          ><span class="weight-punctuation">&gt;</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+      <p>
+        <small
+          >Note: LoRA should maintain proper format and not become
+          (&lt;lora:name:1.2&gt;:1.2) after modifications.</small
+        >
+      </p>
+    </div>
+
+    <div class="test-section">
       <h2>Instructions for Testing (Updated Integration)</h2>
       <ol>
         <li>
@@ -324,20 +398,30 @@
         </li>
       </ul>
 
-      <h3>New Features Added</h3>
+      <h3>Bug Fixes Applied</h3>
       <ul>
         <li>
-          ✨ <strong>Category Term Hover Color Picker:</strong> Added
-          customizable color setting for category term hover background in the
-          Syntax Highlighting Settings panel
+          🐛
+          <strong>Fixed Embedding Syntax Highlighting Loss:</strong> Embeddings
+          now maintain their blue highlighting after weight modifications within
+          categories
         </li>
         <li>
-          ✨ <strong>Real-time Color Updates:</strong> Changes to the hover
-          color apply instantly without requiring page refresh
+          🐛 <strong>Fixed LoRA Double Weight Formatting:</strong> LoRA terms
+          with existing weights no longer get incorrectly wrapped with
+          additional weight syntax
         </li>
         <li>
-          ✨ <strong>Settings Persistence:</strong> Hover color preference is
-          saved across sessions
+          🔧 <strong>Enhanced Term Type Detection:</strong> Improved detection
+          of embeddings vs LoRAs vs regular terms during category modifications
+        </li>
+        <li>
+          🔧 <strong>Specialized LoRA Weight Handling:</strong> Added dedicated
+          method for modifying LoRA internal weight syntax properly
+        </li>
+        <li>
+          ✨ <strong>Improved Syntax Preservation:</strong> Enhanced tag class
+          updates and forced re-rendering to maintain proper syntax highlighting
         </li>
         <li>
           🐛 <strong>Fixed Category Reference Highlighting:</strong> Category
