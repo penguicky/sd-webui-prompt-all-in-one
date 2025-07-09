@@ -501,10 +501,12 @@ export default {
               if (localValue !== "") localValue = localValue + ":" + weightNum;
             }
           }
-          // 排除Lora、embedding、lyco
+          // 排除Lora、lyco (但包含embedding，因为embedding需要标准权重语法)
           // 如果原来没有括号() [] {}，那么就加上括号
-          if (tag.isLora || tag.isLyco || tag.isEmbedding) {
+          if (tag.isLora || tag.isLyco) {
+            // LoRA和LyCORIS使用自己的语法格式，不需要额外括号
           } else if (!common.hasBrackets(value)) {
+            // 对于embeddings和常规terms，添加标准权重括号
             if (this.useNovelAiWeightSymbol) {
               value = common.setLayers(value, 1, "{", "}");
               if (localValue !== "")

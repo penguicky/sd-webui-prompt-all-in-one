@@ -1,12 +1,11 @@
 <template>
-  <div class="textarea-highlighter" ref="highlighterContainer">
-    <!-- Highlighting overlay div that mirrors textarea content -->
-    <div
+  <div class="syntax-highlighter-wrapper" ref="highlighterWrapper">
+    <!-- Syntax highlighted background -->
+    <pre
       ref="highlightLayer"
-      class="highlight-layer"
-      :style="highlightLayerStyle"
-      v-html="highlightedContent"
-    ></div>
+      class="highlight-background"
+      aria-hidden="true"
+    ><code v-html="highlightedContent"></code></pre>
   </div>
 </template>
 
@@ -37,12 +36,9 @@ export default {
     return {
       targetTextarea: null,
       highlightedContent: "",
-      highlightLayerStyle: {},
       isActive: false,
-      resizeObserver: null,
-      mutationObserver: null,
       debounceTimer: null,
-      parentScrollListeners: [],
+      resizeTimer: null,
     };
   },
   mounted() {
@@ -77,30 +73,22 @@ export default {
     setupHighlighting() {
       if (!this.targetTextarea) return;
 
-      // Position the highlighter container relative to the textarea
-      this.positionHighlighter();
+      // Insert the highlighter wrapper right before the textarea
+      const textareaParent = this.targetTextarea.parentElement;
+      textareaParent.insertBefore(
+        this.$refs.highlighterWrapper,
+        this.targetTextarea
+      );
+
+      // Apply the CSS Grid overlay technique
+      this.applyOverlayStyles();
 
       // Set up event listeners
       this.targetTextarea.addEventListener("input", this.onTextareaInput);
       this.targetTextarea.addEventListener("scroll", this.onTextareaScroll);
-      this.targetTextarea.addEventListener("focus", this.onTextareaFocus);
-      this.targetTextarea.addEventListener("blur", this.onTextareaBlur);
 
-      // Add window resize listener to reposition highlighter
-      window.addEventListener("resize", this.positionHighlighter);
-
-      // Add scroll listeners to parent containers to handle nested scrolling
-      let parent = this.targetTextarea.parentElement;
-      while (parent && parent !== document.body) {
-        if (
-          parent.scrollHeight > parent.clientHeight ||
-          parent.scrollWidth > parent.clientWidth
-        ) {
-          parent.addEventListener("scroll", this.positionHighlighter);
-          this.parentScrollListeners.push(parent);
-        }
-        parent = parent.parentElement;
-      }
+      // Add window resize listener to maintain alignment
+      window.addEventListener("resize", this.onWindowResize);
 
       // Initial highlighting
       this.updateHighlighting();
@@ -108,84 +96,157 @@ export default {
       this.isActive = true;
     },
 
-    setupObservers() {
-      // Watch for textarea resize
-      if (window.ResizeObserver) {
-        this.resizeObserver = new ResizeObserver(() => {
-          this.positionHighlighter();
-        });
-        this.resizeObserver.observe(this.targetTextarea);
-      }
+    applyOverlayStyles() {
+      if (!this.targetTextarea || !this.$refs.highlighterWrapper) return;
 
-      // Watch for DOM changes that might affect textarea
-      if (window.MutationObserver) {
-        this.mutationObserver = new MutationObserver(() => {
-          this.positionHighlighter();
-        });
-        this.mutationObserver.observe(this.targetTextarea.parentElement, {
-          attributes: true,
-          attributeFilter: ["style", "class"],
-        });
-      }
-    },
-
-    positionHighlighter() {
-      if (!this.targetTextarea || !this.$refs.highlighterContainer) return;
-
-      const textareaRect = this.targetTextarea.getBoundingClientRect();
       const textareaStyle = window.getComputedStyle(this.targetTextarea);
+      const wrapper = this.$refs.highlighterWrapper;
+      const highlightLayer = this.$refs.highlightLayer;
+      const codeElement = highlightLayer.querySelector("code");
 
-      // Get the textarea's parent container for proper positioning
+      // Create a CSS Grid container that overlays both elements
       const textareaParent = this.targetTextarea.parentElement;
-      const parentRect = textareaParent.getBoundingClientRect();
+      textareaParent.style.display = "grid";
+      textareaParent.style.position = "relative";
 
-      // Position the highlighter container to match the textarea exactly
-      const container = this.$refs.highlighterContainer;
-      container.style.position = "absolute";
-      container.style.left = textareaRect.left - parentRect.left + "px";
-      container.style.top = textareaRect.top - parentRect.top + "px";
-      container.style.width = textareaRect.width + "px";
-      container.style.height = textareaRect.height + "px";
-      container.style.pointerEvents = "none";
-      container.style.zIndex = "1";
+      // Both elements occupy the same grid cell
+      wrapper.style.gridArea = "1 / 1 / 2 / 2";
+      this.targetTextarea.style.gridArea = "1 / 1 / 2 / 2";
 
-      // Insert the highlighter container right before the textarea in the DOM
-      if (container.parentElement !== textareaParent) {
-        textareaParent.insertBefore(container, this.targetTextarea);
-      }
+      // Ensure exact positioning and sizing
+      wrapper.style.position = "relative";
+      wrapper.style.width = "100%";
+      wrapper.style.height = "100%";
+      wrapper.style.overflow = "hidden";
 
-      // Make textarea background transparent and ensure proper layering
-      this.targetTextarea.style.background = "transparent";
-      this.targetTextarea.style.position = "relative";
-      this.targetTextarea.style.zIndex = "2";
-
-      // Update highlight layer style to match textarea exactly
-      this.highlightLayerStyle = {
-        position: "absolute",
-        left: "0",
-        top: "0",
-        width: "100%",
-        height: "100%",
-        padding: textareaStyle.padding,
-        margin: "0", // Remove margin to prevent offset
-        border: textareaStyle.border,
-        borderColor: "transparent",
-        fontSize: textareaStyle.fontSize,
+      // Copy critical font and spacing properties with exact precision
+      const criticalStyles = {
         fontFamily: textareaStyle.fontFamily,
+        fontSize: textareaStyle.fontSize,
+        fontWeight: textareaStyle.fontWeight,
+        fontStyle: textareaStyle.fontStyle,
+        fontVariant: textareaStyle.fontVariant,
         lineHeight: textareaStyle.lineHeight,
         letterSpacing: textareaStyle.letterSpacing,
         wordSpacing: textareaStyle.wordSpacing,
         textAlign: textareaStyle.textAlign,
+        textIndent: textareaStyle.textIndent,
+        textTransform: textareaStyle.textTransform,
+        whiteSpace: textareaStyle.whiteSpace,
+        wordWrap: textareaStyle.wordWrap,
+        overflowWrap: textareaStyle.overflowWrap,
+        tabSize: textareaStyle.tabSize,
+        padding: textareaStyle.padding,
+        paddingTop: textareaStyle.paddingTop,
+        paddingRight: textareaStyle.paddingRight,
+        paddingBottom: textareaStyle.paddingBottom,
+        paddingLeft: textareaStyle.paddingLeft,
+        border: textareaStyle.border,
+        borderWidth: textareaStyle.borderWidth,
+        borderStyle: textareaStyle.borderStyle,
+        borderColor: "transparent",
+        borderRadius: textareaStyle.borderRadius,
+        boxSizing: textareaStyle.boxSizing,
+        margin: "0", // Reset margin to prevent offset
+        width: "100%",
+        height: "100%",
+      };
+
+      // Apply styles to wrapper
+      Object.assign(wrapper.style, criticalStyles);
+
+      // Apply styles to pre element
+      Object.assign(highlightLayer.style, {
+        ...criticalStyles,
+        margin: "0",
+        background: "transparent",
+        overflow: "hidden",
         whiteSpace: "pre-wrap",
         wordWrap: "break-word",
-        overflow: "hidden",
-        background: textareaStyle.background,
-        color: "transparent", // Hide the duplicate text
-        pointerEvents: "none",
-        boxSizing: textareaStyle.boxSizing,
-        scrollTop: this.targetTextarea.scrollTop + "px",
-        scrollLeft: this.targetTextarea.scrollLeft + "px",
-      };
+      });
+
+      // Apply styles to code element for perfect alignment
+      if (codeElement) {
+        Object.assign(codeElement.style, {
+          fontFamily: textareaStyle.fontFamily,
+          fontSize: textareaStyle.fontSize,
+          fontWeight: textareaStyle.fontWeight,
+          lineHeight: textareaStyle.lineHeight,
+          letterSpacing: textareaStyle.letterSpacing,
+          wordSpacing: textareaStyle.wordSpacing,
+          margin: "0",
+          padding: "0",
+          border: "none",
+          background: "transparent",
+          whiteSpace: "pre-wrap",
+          wordWrap: "break-word",
+          display: "block",
+        });
+      }
+
+      // Make textarea transparent but keep caret visible
+      this.targetTextarea.style.background = "transparent";
+      this.targetTextarea.style.color = "transparent";
+      this.targetTextarea.style.caretColor = "#ffffff";
+      this.targetTextarea.style.zIndex = "2";
+      this.targetTextarea.style.resize = "none";
+      this.targetTextarea.style.outline = "none";
+
+      // Don't remove the border completely - make it transparent instead
+      this.targetTextarea.style.borderColor = "transparent";
+
+      // Style the highlight layer for proper layering
+      wrapper.style.zIndex = "1";
+      wrapper.style.pointerEvents = "none";
+
+      // Verify alignment after styles are applied
+      this.$nextTick(() => {
+        this.verifyAlignment();
+      });
+    },
+
+    verifyAlignment() {
+      if (!this.targetTextarea || !this.$refs.highlightLayer) return;
+
+      const textareaRect = this.targetTextarea.getBoundingClientRect();
+      const highlightRect = this.$refs.highlightLayer.getBoundingClientRect();
+      const wrapperRect = this.$refs.highlighterWrapper.getBoundingClientRect();
+
+      // Calculate alignment metrics for debugging
+      const horizontalOffset = Math.abs(textareaRect.left - highlightRect.left);
+      const verticalOffset = Math.abs(textareaRect.top - highlightRect.top);
+      const widthDiff = Math.abs(textareaRect.width - highlightRect.width);
+      const heightDiff = Math.abs(textareaRect.height - highlightRect.height);
+
+      // Check if alignment is within acceptable tolerance (1px)
+      const tolerance = 1;
+      const isAligned =
+        horizontalOffset <= tolerance &&
+        verticalOffset <= tolerance &&
+        widthDiff <= tolerance &&
+        heightDiff <= tolerance;
+
+      if (!isAligned) {
+        // Attempt to fix alignment issues
+        this.fixAlignment();
+      }
+    },
+
+    fixAlignment() {
+      // Force re-application of styles if alignment is off
+      setTimeout(() => {
+        this.applyOverlayStyles();
+      }, 100);
+    },
+
+    onWindowResize() {
+      // Debounce resize events to avoid excessive recalculations
+      clearTimeout(this.resizeTimer);
+      this.resizeTimer = setTimeout(() => {
+        if (this.isActive) {
+          this.applyOverlayStyles();
+        }
+      }, 150);
     },
 
     onTextareaInput() {
@@ -197,33 +258,29 @@ export default {
         } catch (error) {
           console.warn("Highlighting update failed:", error);
         }
-      }, 100); // Increased debounce time for better performance
+      }, 50); // Faster response for better UX
     },
 
     onTextareaScroll() {
       // Sync scroll position with the highlight layer
       if (this.$refs.highlightLayer && this.targetTextarea) {
-        // Update the highlight layer's scroll position to match the textarea
-        this.$refs.highlightLayer.scrollTop = this.targetTextarea.scrollTop;
-        this.$refs.highlightLayer.scrollLeft = this.targetTextarea.scrollLeft;
+        const highlightLayer = this.$refs.highlightLayer;
+        const codeElement = highlightLayer.querySelector("code");
 
-        // Also update the style object for consistency
-        this.highlightLayerStyle = {
-          ...this.highlightLayerStyle,
-          scrollTop: this.targetTextarea.scrollTop + "px",
-          scrollLeft: this.targetTextarea.scrollLeft + "px",
-        };
+        // Sync scroll on both pre and code elements for maximum compatibility
+        highlightLayer.scrollTop = this.targetTextarea.scrollTop;
+        highlightLayer.scrollLeft = this.targetTextarea.scrollLeft;
+
+        if (codeElement) {
+          codeElement.scrollTop = this.targetTextarea.scrollTop;
+          codeElement.scrollLeft = this.targetTextarea.scrollLeft;
+        }
+
+        // Also sync the wrapper scroll
+        this.$refs.highlighterWrapper.scrollTop = this.targetTextarea.scrollTop;
+        this.$refs.highlighterWrapper.scrollLeft =
+          this.targetTextarea.scrollLeft;
       }
-    },
-
-    onTextareaFocus() {
-      this.isActive = true;
-      this.updateHighlighting();
-    },
-
-    onTextareaBlur() {
-      // Keep highlighting active even when not focused
-      // this.isActive = false
     },
 
     updateHighlighting() {
@@ -236,10 +293,9 @@ export default {
       if (newHighlightedContent !== this.highlightedContent) {
         this.highlightedContent = newHighlightedContent;
 
-        // Ensure positioning is correct after content update
+        // Sync scroll position after content update
         this.$nextTick(() => {
-          this.positionHighlighter();
-          this.onTextareaScroll(); // Sync scroll position
+          this.onTextareaScroll();
         });
       }
     },
@@ -247,178 +303,107 @@ export default {
     parseAndHighlightText(text) {
       if (!text) return "";
 
-      // Performance optimization: limit text length for highlighting
-      if (text.length > 10000) {
-        console.warn(
-          "Text too long for highlighting, truncating to 10000 characters"
-        );
-        text = text.substring(0, 10000) + "...";
+      // Handle final newlines (CSS-Tricks technique) - critical for alignment
+      if (text[text.length - 1] === "\n") {
+        text += " "; // Add placeholder space for final line
       }
 
-      // Use a more sophisticated parsing approach
-      return this.parseTokensAndHighlight(text);
+      // Handle tabs consistently
+      text = text.replace(/\t/g, "    "); // Convert tabs to 4 spaces for consistency
+
+      // Use a safe tokenization approach to prevent HTML corruption
+      return this.tokenizeAndHighlight(text);
     },
 
-    parseTokensAndHighlight(text) {
-      // Escape HTML first
-      const escapedText = this.escapeHtml(text);
-
-      // Parse text into structured tokens
-      const tokens = this.tokenizeText(escapedText);
-
-      // Apply highlighting to each token
-      return tokens.map((token) => this.highlightToken(token)).join("");
-    },
-
-    tokenizeText(text) {
+    tokenizeAndHighlight(text) {
+      // Split text into tokens while preserving all characters
       const tokens = [];
       let currentPos = 0;
 
-      // Regex patterns for different token types
-      const patterns = [
-        // LoRA/LyCORIS patterns: <lora:name:weight> or <lyco:name:weight>
-        {
-          type: "lora",
-          regex: /&lt;(lora|lyco):\s*([^&:]+)\s*(?::\s*([^&>]+))?&gt;/gi,
-        },
-        // Weight patterns: (text:1.2) or [text:0.8] or {text}
-        {
-          type: "weight",
-          regex: /[\(\[\{][^)\]\}]*[\)\]\}]/g,
-        },
-        // Word boundaries for regular tokens
-        {
-          type: "word",
-          regex: /[^\s,<>()[\]{}]+/g,
-        },
-        // Whitespace and separators
-        {
-          type: "separator",
-          regex: /[\s,]+/g,
-        },
-      ];
+      // First, find all LoRA/LyCORIS patterns
+      const loraRegex = /<(lora|lyco):\s*([^:>]+)\s*(?::\s*[^>]+)?>/gi;
+      const loraMatches = [];
+      let match;
 
+      while ((match = loraRegex.exec(text)) !== null) {
+        loraMatches.push({
+          start: match.index,
+          end: match.index + match[0].length,
+          text: match[0],
+          type: match[1], // 'lora' or 'lyco'
+          name: match[2] ? match[2].trim() : "",
+          fullMatch: match[0],
+        });
+      }
+
+      // Process text character by character, handling LoRA patterns
       while (currentPos < text.length) {
-        let bestMatch = null;
-        let bestPattern = null;
+        // Check if we're at the start of a LoRA pattern
+        const loraMatch = loraMatches.find((m) => m.start === currentPos);
 
-        // Find the earliest match among all patterns
-        for (const pattern of patterns) {
-          pattern.regex.lastIndex = currentPos;
-          const match = pattern.regex.exec(text);
+        if (loraMatch) {
+          // Add LoRA token
+          const exists =
+            loraMatch.type === "lora"
+              ? this.loraExists(loraMatch.name) !== false
+              : this.lycoExists(loraMatch.name) !== false;
 
-          if (match && match.index === currentPos) {
-            if (!bestMatch || match.index < bestMatch.index) {
-              bestMatch = match;
-              bestPattern = pattern;
-            }
-          }
-        }
+          const className = loraMatch.name
+            ? exists
+              ? "highlight-lora"
+              : "highlight-lora-missing"
+            : "highlight-lora-invalid";
 
-        if (bestMatch) {
           tokens.push({
-            type: bestPattern.type,
-            content: bestMatch[0],
-            match: bestMatch,
-            start: currentPos,
-            end: currentPos + bestMatch[0].length,
+            type: "lora",
+            text: loraMatch.text,
+            className: className,
           });
-          currentPos += bestMatch[0].length;
+
+          currentPos = loraMatch.end;
         } else {
-          // No pattern matched, take single character
-          tokens.push({
-            type: "char",
-            content: text[currentPos],
-            start: currentPos,
-            end: currentPos + 1,
-          });
-          currentPos++;
-        }
-      }
+          // Find the next word or special character
+          const remainingText = text.slice(currentPos);
+          const wordMatch = remainingText.match(/^([a-zA-Z_][a-zA-Z0-9_-]*)/);
 
-      return tokens;
-    },
+          if (wordMatch) {
+            // It's a word - check if it's an embedding
+            const word = wordMatch[1];
+            const isEmbedding = this.embeddingExists(word) !== false;
 
-    highlightToken(token) {
-      switch (token.type) {
-        case "lora":
-          return this.highlightLoraToken(token);
-        case "weight":
-          return this.highlightWeightToken(token);
-        case "word":
-          return this.highlightWordToken(token);
-        default:
-          return token.content;
-      }
-    },
+            tokens.push({
+              type: isEmbedding ? "embedding" : "regular",
+              text: word,
+              className: isEmbedding
+                ? "highlight-embedding"
+                : "highlight-regular",
+            });
 
-    highlightLoraToken(token) {
-      const match = token.match;
-      const loraType = match[1]; // 'lora' or 'lyco'
-      const loraName = match[2] ? match[2].trim() : "";
-      const weight = match[3] ? match[3].trim() : "";
-
-      if (!loraName) {
-        return `<span class="highlight-lora-invalid">${token.content}</span>`;
-      }
-
-      // Check if LoRA/LyCORIS exists
-      const exists =
-        loraType === "lora"
-          ? this.loraExists(loraName) !== false
-          : this.lycoExists(loraName) !== false;
-
-      const className = exists ? "highlight-lora" : "highlight-lora-missing";
-      return `<span class="${className}" title="${loraType}: ${loraName}${
-        weight ? " (weight: " + weight + ")" : ""
-      }">${token.content}</span>`;
-    },
-
-    highlightWeightToken(token) {
-      const content = token.content;
-
-      // Extract the inner content and check if it's an embedding
-      const innerMatch = content.match(/^[\(\[\{]([^)\]\}]*)[\)\]\}]$/);
-      if (innerMatch) {
-        const innerContent = innerMatch[1].trim();
-
-        // Check for weight syntax like "text:1.2"
-        const weightMatch = innerContent.match(/^(.+?):\s*([\d.-]+)$/);
-        if (weightMatch) {
-          const term = weightMatch[1].trim();
-          const weight = weightMatch[2];
-
-          if (this.embeddingExists(term) !== false) {
-            return `<span class="highlight-embedding-weight" title="Embedding: ${term} (weight: ${weight})">${token.content}</span>`;
+            currentPos += word.length;
           } else {
-            return `<span class="highlight-regular-weight" title="Term: ${term} (weight: ${weight})">${token.content}</span>`;
-          }
-        } else {
-          // No weight, just check if it's an embedding
-          if (this.embeddingExists(innerContent) !== false) {
-            return `<span class="highlight-embedding">${token.content}</span>`;
-          } else {
-            return `<span class="highlight-regular">${token.content}</span>`;
+            // It's a non-word character (space, punctuation, etc.)
+            tokens.push({
+              type: "text",
+              text: text[currentPos],
+              className: null,
+            });
+
+            currentPos++;
           }
         }
       }
 
-      return `<span class="highlight-weight">${token.content}</span>`;
-    },
-
-    highlightWordToken(token) {
-      const word = token.content.trim();
-
-      if (!word) return token.content;
-
-      // Check if it's an embedding
-      const embeddingResult = this.embeddingExists(word);
-      if (embeddingResult !== false) {
-        return `<span class="highlight-embedding" title="Embedding: ${word}">${token.content}</span>`;
-      }
-
-      // Regular term
-      return `<span class="highlight-regular">${token.content}</span>`;
+      // Convert tokens to HTML with proper escaping
+      return tokens
+        .map((token) => {
+          if (token.className) {
+            const escapedText = this.escapeHtml(token.text);
+            return `<span class="${token.className}">${escapedText}</span>`;
+          } else {
+            return this.escapeHtml(token.text);
+          }
+        })
+        .join("");
     },
 
     escapeHtml(text) {
@@ -434,33 +419,21 @@ export default {
           "scroll",
           this.onTextareaScroll
         );
-        this.targetTextarea.removeEventListener("focus", this.onTextareaFocus);
-        this.targetTextarea.removeEventListener("blur", this.onTextareaBlur);
 
-        // Restore original textarea background
+        // Restore original textarea styles
         this.targetTextarea.style.background = "";
-        this.targetTextarea.style.position = "";
+        this.targetTextarea.style.color = "";
+        this.targetTextarea.style.caretColor = "";
         this.targetTextarea.style.zIndex = "";
+        this.targetTextarea.style.gridArea = "";
+        this.targetTextarea.style.borderColor = "";
       }
 
       // Remove window resize listener
-      window.removeEventListener("resize", this.positionHighlighter);
-
-      // Remove parent scroll listeners
-      this.parentScrollListeners.forEach((parent) => {
-        parent.removeEventListener("scroll", this.positionHighlighter);
-      });
-      this.parentScrollListeners = [];
-
-      if (this.resizeObserver) {
-        this.resizeObserver.disconnect();
-      }
-
-      if (this.mutationObserver) {
-        this.mutationObserver.disconnect();
-      }
+      window.removeEventListener("resize", this.onWindowResize);
 
       clearTimeout(this.debounceTimer);
+      clearTimeout(this.resizeTimer);
       this.isActive = false;
     },
   },
@@ -468,54 +441,80 @@ export default {
 </script>
 
 <style scoped>
-.textarea-highlighter {
-  position: absolute;
+.syntax-highlighter-wrapper {
   pointer-events: none;
   z-index: 1;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
   overflow: hidden;
 }
 
-.highlight-layer {
-  position: absolute;
-  pointer-events: none;
-  user-select: none;
-  overflow: hidden;
-  z-index: 1;
+.highlight-background {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
 }
 
-/* Highlighting styles - Text color only, no backgrounds */
+.highlight-background code {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  word-spacing: inherit !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Syntax highlighting colors - visible text colors */
 :deep(.highlight-lora) {
   color: #ff6600 !important;
+  font-weight: 500 !important;
+  background: transparent !important;
 }
 
 :deep(.highlight-lora-missing) {
   color: #ff6600 !important;
-  text-decoration: underline wavy #ff0000;
+  text-decoration: underline wavy #ff0000 !important;
+  font-weight: 500 !important;
+  background: transparent !important;
 }
 
 :deep(.highlight-lora-invalid) {
   color: #ff0000 !important;
-  text-decoration: underline wavy #ff0000;
+  text-decoration: underline wavy #ff0000 !important;
+  background: transparent !important;
 }
 
 :deep(.highlight-embedding) {
   color: #0066cc !important;
-}
-
-:deep(.highlight-embedding-weight) {
-  color: #0066cc !important;
+  font-weight: 500 !important;
+  background: transparent !important;
 }
 
 :deep(.highlight-regular) {
   color: #00cc66 !important;
-}
-
-:deep(.highlight-regular-weight) {
-  color: #00cc66 !important;
-}
-
-:deep(.highlight-weight) {
-  color: #888888 !important;
-  font-style: italic;
+  background: transparent !important;
 }
 </style>
