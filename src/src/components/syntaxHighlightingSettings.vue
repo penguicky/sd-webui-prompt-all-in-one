@@ -425,9 +425,10 @@ export default {
           <span style="${styles.regularTerms}">beautiful</span> <span style="${styles.regularTerms}">woman</span><span style="${styles.punctuation}">,</span> 
           <span style="${styles.punctuation}">(</span><span style="${styles.embeddings}">masterpiece</span><span style="${styles.punctuation}">:</span><span style="${styles.weightBoost}">1.2</span><span style="${styles.punctuation}">)</span><span style="${styles.punctuation}">,</span> 
           <span style="${styles.punctuation}">[</span><span style="${styles.regularTerms}">blurry</span><span style="${styles.punctuation}">:</span><span style="${styles.weightReduce}">0.8</span><span style="${styles.punctuation}">]</span><span style="${styles.punctuation}">,</span><br/>
-          <span style="${styles.punctuation}">&lt;</span><span style="${styles.punctuation}">lora</span><span style="${styles.punctuation}">:</span><span style="${styles.loraNames}">realistic_vision</span><span style="${styles.punctuation}">:</span><span style="${styles.weightBoost}">1.1</span><span style="${styles.punctuation}">&gt;</span><span style="${styles.punctuation}">,</span> 
+          <span style="${styles.punctuation}">&lt;</span><span style="${styles.punctuation}">lora</span><span style="${styles.punctuation}">:</span><span style="${styles.loraNames}">realistic_vision</span><span style="${styles.punctuation}">:</span><span style="${styles.weightBoost}">1.1</span><span style="${styles.punctuation}">&gt;</span><span style="${styles.punctuation}">,</span>
           <span style="${styles.embeddings}">bad_hands</span><span style="${styles.punctuation}">,</span><br/>
-          <span style="${styles.punctuation}">{</span><span style="${styles.categoryNames}">style</span><span style="${styles.punctuation}">:</span> <span style="${styles.regularTerms}">photorealistic</span><span style="${styles.punctuation}">,</span> <span style="${styles.embeddings}">detailed_face</span><span style="${styles.punctuation}">}</span>
+          <span style="${styles.punctuation}">{</span><span style="${styles.categoryNames}">style</span><span style="${styles.punctuation}">:</span> <span style="${styles.regularTerms}">photorealistic</span><span style="${styles.punctuation}">,</span> <span style="${styles.embeddings}">detailed_face</span><span style="${styles.punctuation}">}</span><span style="${styles.punctuation}">,</span>
+          <span style="${styles.punctuation}">{</span><span style="${styles.categoryNames}">mood</span><span style="${styles.punctuation}">}</span>
         </div>
       `;
     },

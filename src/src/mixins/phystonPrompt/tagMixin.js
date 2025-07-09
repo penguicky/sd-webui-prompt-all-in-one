@@ -6,12 +6,18 @@ export default {
     return {
       tagClickTimeId: 0,
       showExtendId: "",
+      categoryTermHoverData: null, // Store data about the hovered category term
     };
   },
   mounted() {
     /*common.gradioApp().addEventListener('mousemove', () => {
             this.$refs.highlightPrompt.hide()
         })*/
+
+    // Set up event listeners for category term hover detection
+    this.$nextTick(() => {
+      this._setupCategoryTermHoverListeners();
+    });
   },
   methods: {
     _setTag(tag) {
@@ -337,19 +343,28 @@ export default {
           // Add space before each term (after colon or comma)
           result += " ";
 
+          // Generate unique identifier for this term within the category
+          const termId = `category-term-${Date.now()}-${Math.random()
+            .toString(36)
+            .substr(2, 9)}-${i}`;
+
           // Check if the term contains weight syntax and parse it recursively
           const weightHighlight = this._highlightWeightSyntax(term);
           if (weightHighlight) {
-            // Term contains weight syntax, add the highlighted HTML
-            result += weightHighlight;
+            // Term contains weight syntax, wrap in hoverable span
+            result += `<span class="category-term-wrapper" data-term-id="${termId}" data-term-value="${common.escapeHtml(
+              term
+            )}" data-term-index="${i}">${weightHighlight}</span>`;
             continue;
           }
 
           // Check if it's a LoRA with strength (complex format)
           const loraHighlight = this._highlightLoraSyntax(term);
           if (loraHighlight) {
-            // Parse the complex LoRA syntax within the category
-            result += loraHighlight;
+            // Parse the complex LoRA syntax within the category, wrap in hoverable span
+            result += `<span class="category-term-wrapper" data-term-id="${termId}" data-term-value="${common.escapeHtml(
+              term
+            )}" data-term-index="${i}">${loraHighlight}</span>`;
             continue;
           }
 
@@ -365,9 +380,12 @@ export default {
             termClass = "lora-content";
           }
 
-          result += `<span class="${termClass}">${common.escapeHtml(
+          // Wrap individual term in hoverable span with data attributes
+          result += `<span class="category-term-wrapper" data-term-id="${termId}" data-term-value="${common.escapeHtml(
             term
-          )}</span>`;
+          )}" data-term-index="${i}"><span class="${termClass}">${common.escapeHtml(
+            term
+          )}</span></span>`;
         }
 
         result += `<span class="weight-punctuation">}</span>`;
@@ -640,6 +658,18 @@ export default {
       }
     },
     onTagWeightNumChange(id, e) {
+      // Check if we're working with a category term
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === id
+      ) {
+        const { tag, termValue, termIndex } = this.categoryTermHoverData;
+        const newWeight =
+          typeof e === "number" || typeof e === "string" ? e : e.target.value;
+        this._modifyCategoryTerm(tag, termIndex, termValue, "set", newWeight);
+        return;
+      }
+
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return false;
       e = typeof e === "number" || typeof e === "string" ? e : e.target.value;
@@ -786,6 +816,16 @@ export default {
       this.updateTags();
     },
     onIncWeightClick(id, num) {
+      // Check if we're working with a category term
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === id
+      ) {
+        const { tag, termValue, termIndex } = this.categoryTermHoverData;
+        this._modifyCategoryTerm(tag, termIndex, termValue, "inc", num);
+        return;
+      }
+
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return;
       let value = tag.value;
@@ -817,6 +857,16 @@ export default {
       this.updateTags();
     },
     onDecWeightClick(id, num) {
+      // Check if we're working with a category term
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === id
+      ) {
+        const { tag, termValue, termIndex } = this.categoryTermHoverData;
+        this._modifyCategoryTerm(tag, termIndex, termValue, "dec", num);
+        return;
+      }
+
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return;
       let value = tag.value;
@@ -904,6 +954,212 @@ export default {
         if (item.value === tag.value) {
           this.onDeleteTagClick(item.id);
         }
+      });
+    },
+
+    // Setup event listeners for category term hover detection
+    _setupCategoryTermHoverListeners() {
+      // Use event delegation to handle dynamically created category term wrappers
+      const container = this.$el;
+      if (!container) return;
+
+      // Remove existing listeners to prevent duplicates
+      container.removeEventListener(
+        "mouseenter",
+        this._onCategoryTermMouseEnter,
+        true
+      );
+      container.removeEventListener(
+        "mouseleave",
+        this._onCategoryTermMouseLeave,
+        true
+      );
+
+      // Add new listeners with capture phase to catch events before they bubble
+      container.addEventListener(
+        "mouseenter",
+        this._onCategoryTermMouseEnter,
+        true
+      );
+      container.addEventListener(
+        "mouseleave",
+        this._onCategoryTermMouseLeave,
+        true
+      );
+    },
+
+    // Handle mouse enter on category terms
+    _onCategoryTermMouseEnter(event) {
+      const target = event.target;
+      const termWrapper = target.closest(".category-term-wrapper");
+
+      if (termWrapper && this.hotkey.hover === "extend") {
+        const termId = termWrapper.getAttribute("data-term-id");
+        const termValue = termWrapper.getAttribute("data-term-value");
+        const termIndex = parseInt(termWrapper.getAttribute("data-term-index"));
+
+        // Find the parent tag that contains this category
+        const tagElement = termWrapper.closest(".prompt-tag");
+        if (!tagElement) return;
+
+        const tagId = tagElement.getAttribute("data-id");
+        const tag = this.tags.find((t) => t.id === tagId);
+        if (!tag) return;
+
+        // Calculate position of the term wrapper for menu positioning
+        const rect = termWrapper.getBoundingClientRect();
+        const tagRect = tagElement.getBoundingClientRect();
+
+        // Store category term hover data with position information
+        this.categoryTermHoverData = {
+          tagId: tagId,
+          tag: tag,
+          termId: termId,
+          termValue: termValue,
+          termIndex: termIndex,
+          termWrapper: termWrapper,
+          position: {
+            left: rect.left - tagRect.left,
+            top: rect.top - tagRect.top,
+            width: rect.width,
+            height: rect.height,
+          },
+        };
+
+        // Use the existing showExtendId system but for the parent tag
+        this.showExtendId = tagId;
+
+        // Prevent the normal tag hover from triggering
+        event.stopPropagation();
+      }
+    },
+
+    // Handle mouse leave on category terms
+    _onCategoryTermMouseLeave(event) {
+      const target = event.target;
+      const termWrapper = target.closest(".category-term-wrapper");
+
+      if (termWrapper && this.categoryTermHoverData) {
+        const termId = termWrapper.getAttribute("data-term-id");
+
+        if (this.categoryTermHoverData.termId === termId) {
+          this.showExtendId = "";
+          this.categoryTermHoverData = null;
+        }
+
+        // Prevent the normal tag hover from triggering
+        event.stopPropagation();
+      }
+    },
+
+    // Create a virtual tag object for category terms that can work with existing weight methods
+    _createVirtualCategoryTermTag() {
+      if (!this.categoryTermHoverData) return null;
+
+      const { tag, termValue, termIndex } = this.categoryTermHoverData;
+
+      // Create a virtual tag that represents the individual term
+      const virtualTag = {
+        id: `category-term-${tag.id}-${termIndex}`,
+        value: termValue,
+        localValue: "",
+        weightNum: this._getCategoryTermWeight(termValue),
+        incWeight: 0,
+        decWeight: 0,
+        isLora: false,
+        isLyco: false,
+        isEmbedding: false,
+        isCategoryTerm: true,
+        parentTag: tag,
+        termIndex: termIndex,
+      };
+
+      // Set tag class properties for the virtual tag
+      this._setTagClass(virtualTag);
+
+      return virtualTag;
+    },
+
+    // Get weight of a category term
+    _getCategoryTermWeight(termValue) {
+      // Extract weight from various weight syntaxes
+      // Check for colon syntax first: (term:1.2), [term:0.8], {term:1.5}
+      const colonWeightMatch = termValue.match(
+        /^[\(\[\{](.+):(\-?[0-9\.]+)[\)\]\}]$/
+      );
+      if (colonWeightMatch) {
+        return parseFloat(colonWeightMatch[2]);
+      }
+
+      // Check for bracket/parentheses layers
+      const weightNum = common.getTagWeightNum(termValue);
+      return weightNum || 1.0;
+    },
+
+    // Modify individual term within a category declaration
+    _modifyCategoryTerm(tag, termIndex, originalTermValue, action, value) {
+      const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
+      const match = tag.value.match(categoryRegex);
+
+      if (!match) return;
+
+      const [, categoryName, termsStr] = match;
+      const terms = termsStr.split(",").map((term) => term.trim());
+
+      if (termIndex >= terms.length) return;
+
+      let modifiedTerm = terms[termIndex];
+
+      // Apply weight modification based on action
+      switch (action) {
+        case "inc":
+          // Add parentheses for emphasis
+          if (this.useNovelAiWeightSymbol) {
+            modifiedTerm = common.setLayers(modifiedTerm, value, "{", "}");
+          } else {
+            modifiedTerm = common.setLayers(modifiedTerm, value, "(", ")");
+          }
+          break;
+
+        case "dec":
+          // Add brackets for de-emphasis
+          modifiedTerm = common.setLayers(modifiedTerm, value, "[", "]");
+          break;
+
+        case "set":
+          // Set specific weight using colon syntax
+          // Remove existing weight syntax first
+          modifiedTerm = modifiedTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
+          modifiedTerm = modifiedTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
+
+          if (value !== 1.0 && value !== 1) {
+            // Apply new weight with colon syntax
+            if (this.useNovelAiWeightSymbol) {
+              modifiedTerm = `{${modifiedTerm}:${value}}`;
+            } else {
+              modifiedTerm = `(${modifiedTerm}:${value})`;
+            }
+          }
+          break;
+      }
+
+      // Update the term in the array
+      terms[termIndex] = modifiedTerm;
+
+      // Reconstruct the category declaration
+      const newValue = `{${categoryName}: ${terms.join(", ")}}`;
+
+      // Update the tag
+      tag.value = newValue;
+      this._setTag(tag);
+      this.updateTags();
+
+      // Update hover data with new term value
+      this.categoryTermHoverData.termValue = modifiedTerm;
+
+      // Re-setup listeners after DOM update
+      this.$nextTick(() => {
+        this._setupCategoryTermHoverListeners();
       });
     },
   },

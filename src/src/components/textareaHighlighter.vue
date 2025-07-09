@@ -896,7 +896,7 @@ export default {
     parseCategoryReference(text, startPos) {
       // Check for category reference syntax like {category_name}
       // No colon, just a name within braces
-      const categoryRefRegex = /^{([^:}]+)}$/;
+      const categoryRefRegex = /^{([^:}]+)}/;
       const remainingText = text.slice(startPos);
       const match = remainingText.match(categoryRefRegex);
 

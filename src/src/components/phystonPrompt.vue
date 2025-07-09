@@ -654,14 +654,7 @@
               <div
                 class="btn-tag-extend"
                 v-animate="'fadeIn'"
-                :style="{
-                  display:
-                    (tag.type === 'text' || !tag.type) &&
-                    showExtendId === tag.id &&
-                    !this.editing[tag.id]
-                      ? 'flex'
-                      : 'none',
-                }"
+                :style="getExtendMenuStyle(tag)"
                 @click.stop=""
                 @mousedown.stop=""
                 @mousemove.stop=""
@@ -670,7 +663,7 @@
                 <vue-number-input
                   class="input-number"
                   name="input-number"
-                  :model-value="tag.weightNum"
+                  :model-value="getCurrentTagWeight(tag)"
                   center
                   controls
                   :min="-100"
@@ -1475,6 +1468,13 @@ export default {
         }, time);
       });
       this.init();
+
+      // Setup category term hover listeners after initial render
+      this.$nextTick(() => {
+        if (this._setupCategoryTermHoverListeners) {
+          this._setupCategoryTermHoverListeners();
+        }
+      });
     });
   },
   methods: {
@@ -2479,6 +2479,52 @@ export default {
           el.offsetHeight;
         });
       });
+    },
+
+    // Get the current weight for display in the number input
+    getCurrentTagWeight(tag) {
+      // If we're hovering over a category term, show its weight
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === tag.id
+      ) {
+        return this._getCategoryTermWeight(
+          this.categoryTermHoverData.termValue
+        );
+      }
+      // Otherwise show the normal tag weight
+      return tag.weightNum;
+    },
+
+    // Get the style object for the extend menu with dynamic positioning
+    getExtendMenuStyle(tag) {
+      const baseStyle = {
+        display:
+          (tag.type === "text" || !tag.type) &&
+          this.showExtendId === tag.id &&
+          !this.editing[tag.id]
+            ? "flex"
+            : "none",
+      };
+
+      // If we're hovering over a category term, apply dynamic positioning
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === tag.id &&
+        this.categoryTermHoverData.position
+      ) {
+        const pos = this.categoryTermHoverData.position;
+        return {
+          ...baseStyle,
+          position: "absolute",
+          top: `${pos.top - 32}px`,
+          left: `${pos.left}px`,
+          zIndex: 1000,
+        };
+      }
+
+      // Default positioning for regular tags
+      return baseStyle;
     },
   },
 };

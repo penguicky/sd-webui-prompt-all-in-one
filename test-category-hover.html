@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Category Term Hover Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background-color: #1a1a1a;
+        color: white;
+      }
+
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #333;
+        border-radius: 5px;
+      }
+
+      .category-term-wrapper {
+        cursor: pointer;
+        display: inline;
+      }
+
+      .weight-punctuation {
+        color: #9966cc;
+      }
+
+      .category-name {
+        color: #ff69b4;
+      }
+
+      .embedding-content {
+        color: #0066cc;
+      }
+
+      .lora-content {
+        color: #ff6600;
+      }
+
+      .character {
+        color: #00cc66;
+      }
+
+      .weight-value-boost {
+        color: #00cc66;
+      }
+
+      .weight-value-reduce {
+        color: #ff6666;
+      }
+
+      .test-prompt {
+        background: #2a2a2a;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Category Term Hover Functionality Test</h1>
+
+    <div class="test-section">
+      <h2>Test 1: Basic Category with Regular Terms</h2>
+      <p>Expected: Each term should be hoverable and show context menu</p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">animals</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-1-0"
+          data-term-value="cat"
+          data-term-index="0"
+          ><span class="character">cat</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-1-1"
+          data-term-value="dog"
+          data-term-index="1"
+          ><span class="character">dog</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-1-2"
+          data-term-value="bird"
+          data-term-index="2"
+          ><span class="character">bird</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 2: Category with Embeddings</h2>
+      <p>Expected: Embeddings should be blue, regular terms green</p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">styles</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-2-0"
+          data-term-value="realistic"
+          data-term-index="0"
+          ><span class="embedding-content">realistic</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-2-1"
+          data-term-value="anime"
+          data-term-index="1"
+          ><span class="character">anime</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-2-2"
+          data-term-value="portrait"
+          data-term-index="2"
+          ><span class="embedding-content">portrait</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 3: Category with LoRA Terms</h2>
+      <p>Expected: LoRA terms should be orange</p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">models</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-3-0"
+          data-term-value="&lt;lora:style1&gt;"
+          data-term-index="0"
+          ><span class="lora-content">&lt;lora:style1&gt;</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-3-1"
+          data-term-value="normal"
+          data-term-index="1"
+          ><span class="character">normal</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 4: Category with Weighted Terms</h2>
+      <p>
+        Expected: Weight syntax should be highlighted with purple punctuation,
+        green/red weights
+      </p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">weighted</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-4-0"
+          data-term-value="(strong:1.2)"
+          data-term-index="0"
+        >
+          <span class="weight-punctuation">(</span
+          ><span class="character">strong</span
+          ><span class="weight-punctuation">:</span
+          ><span class="weight-value-boost">1.2</span
+          ><span class="weight-punctuation">)</span> </span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-4-1"
+          data-term-value="[weak:0.8]"
+          data-term-index="1"
+        >
+          <span class="weight-punctuation">[</span
+          ><span class="character">weak</span
+          ><span class="weight-punctuation">:</span
+          ><span class="weight-value-reduce">0.8</span
+          ><span class="weight-punctuation">]</span>
+        </span>
+        <span class="weight-punctuation">}</span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 5: Category References (Fixed)</h2>
+      <p>
+        Expected: Category references should show pink category names in both
+        extension tags and native textareas
+      </p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">animals</span
+        ><span class="weight-punctuation">}</span>,
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">styles</span
+        ><span class="weight-punctuation">}</span>,
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">mood</span
+        ><span class="weight-punctuation">}</span>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 6: Category Term Interaction</h2>
+      <p>
+        Expected: Individual terms should be clickable and show weight controls
+        when hovered
+      </p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">interactive</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-6-0"
+          data-term-value="hover"
+          data-term-index="0"
+          ><span class="character">hover</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-6-1"
+          data-term-value="click"
+          data-term-index="1"
+          ><span class="character">click</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-6-2"
+          data-term-value="modify"
+          data-term-index="2"
+          ><span class="character">modify</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+      <p>
+        <small
+          >Note: In the actual extension, hovering over individual terms will
+          show the weight control menu.</small
+        >
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>Instructions for Testing (Updated Integration)</h2>
+      <ol>
+        <li>
+          Hover over individual terms within the category declarations above
+        </li>
+        <li>
+          Verify that each term wrapper shows a hover effect (light background)
+        </li>
+        <li>
+          Check that the cursor changes to pointer when hovering over terms
+        </li>
+        <li>
+          In the actual extension, the existing btn-tag-extend menu should
+          appear for the parent tag
+        </li>
+        <li>
+          The weight controls should modify the individual hovered term within
+          the category
+        </li>
+        <li>
+          The number input should show the weight of the individual term, not
+          the parent tag
+        </li>
+        <li>
+          Test weight modification and verify syntax highlighting updates for
+          the specific term
+        </li>
+        <li>
+          Verify that the category structure is preserved while individual terms
+          are modified
+        </li>
+      </ol>
+
+      <h3>Integration Benefits</h3>
+      <ul>
+        <li>✅ Reuses existing btn-tag-extend component and styling</li>
+        <li>
+          ✅ Uses existing event handlers (onIncWeightClick, onDecWeightClick,
+          onTagWeightNumChange)
+        </li>
+        <li>✅ No duplicate UI components or CSS</li>
+        <li>
+          ✅ Consistent user experience with regular tag weight modification
+        </li>
+        <li>
+          ✅ Maintains all existing functionality while adding category term
+          support
+        </li>
+      </ul>
+
+      <h3>Recent Fixes Applied</h3>
+      <ul>
+        <li>
+          🔧 <strong>Enhanced CSS Hover Styling:</strong> Added !important
+          declarations, padding, margin, and smooth transitions for better
+          visual feedback
+        </li>
+        <li>
+          🔧 <strong>Dynamic Menu Positioning:</strong> The extend menu now
+          positions itself above the specific hovered term instead of the
+          default parent tag location
+        </li>
+        <li>
+          🔧 <strong>Position Calculation:</strong> Uses getBoundingClientRect()
+          to calculate precise positioning relative to the parent tag container
+        </li>
+        <li>
+          🔧 <strong>Responsive Positioning:</strong> Menu position updates
+          dynamically as you hover over different terms within the same category
+        </li>
+      </ul>
+
+      <h3>New Features Added</h3>
+      <ul>
+        <li>
+          ✨ <strong>Category Term Hover Color Picker:</strong> Added
+          customizable color setting for category term hover background in the
+          Syntax Highlighting Settings panel
+        </li>
+        <li>
+          ✨ <strong>Real-time Color Updates:</strong> Changes to the hover
+          color apply instantly without requiring page refresh
+        </li>
+        <li>
+          ✨ <strong>Settings Persistence:</strong> Hover color preference is
+          saved across sessions
+        </li>
+        <li>
+          🐛 <strong>Fixed Category Reference Highlighting:</strong> Category
+          references like {category} now display correctly with pink
+          highlighting in native WebUI textareas
+        </li>
+        <li>
+          🔧 <strong>Improved Regex Parsing:</strong> Fixed regex pattern for
+          category reference detection in native textarea highlighting
+        </li>
+      </ul>
+
+      <h3>Recent Changes</h3>
+      <ul>
+        <li>
+          🗑️ <strong>Removed Color Customization:</strong> Removed the category
+          term hover color picker and related customization options from the
+          settings panel
+        </li>
+        <li>
+          🧹 <strong>Cleaned Up CSS:</strong> Removed CSS custom properties and
+          hover background styling while preserving core functionality
+        </li>
+        <li>
+          ✅ <strong>Preserved Core Features:</strong> Maintained individual
+          term hover detection, dynamic menu positioning, and weight
+          modification functionality
+        </li>
+        <li>
+          🔧 <strong>Simplified Implementation:</strong> Streamlined the
+          codebase by removing visual customization complexity while keeping
+          functional behavior
+        </li>
+      </ul>
+    </div>
+
+    <script>
+      // Enhanced hover test with positioning demonstration
+      document.querySelectorAll(".category-term-wrapper").forEach((wrapper) => {
+        wrapper.addEventListener("mouseenter", function () {
+          const termValue = this.getAttribute("data-term-value");
+          const termIndex = this.getAttribute("data-term-index");
+          const rect = this.getBoundingClientRect();
+
+          console.log("Hovered term:", termValue);
+          console.log("Term index:", termIndex);
+          console.log("Position:", {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          });
+
+          // Visual feedback for testing
+          this.style.outline = "1px solid #4a54ff";
+        });
+
+        wrapper.addEventListener("mouseleave", function () {
+          console.log("Left term:", this.getAttribute("data-term-value"));
+          this.style.outline = "none";
+        });
+      });
+
+      // Add visual indicator for where menu would appear
+      document.querySelectorAll(".category-term-wrapper").forEach((wrapper) => {
+        wrapper.addEventListener("mouseenter", function () {
+          // Create a temporary indicator
+          const indicator = document.createElement("div");
+          indicator.style.position = "absolute";
+          indicator.style.background = "rgba(74, 84, 255, 0.3)";
+          indicator.style.border = "1px solid #4a54ff";
+          indicator.style.borderRadius = "4px";
+          indicator.style.padding = "2px 8px";
+          indicator.style.fontSize = "10px";
+          indicator.style.color = "#fff";
+          indicator.style.zIndex = "1000";
+          indicator.textContent = "Menu would appear here";
+          indicator.className = "menu-indicator";
+
+          const rect = this.getBoundingClientRect();
+          indicator.style.left = rect.left + "px";
+          indicator.style.top = rect.top - 25 + "px";
+
+          document.body.appendChild(indicator);
+        });
+
+        wrapper.addEventListener("mouseleave", function () {
+          // Remove indicator
+          const indicators = document.querySelectorAll(".menu-indicator");
+          indicators.forEach((indicator) => indicator.remove());
+        });
+      });
+    </script>
+  </body>
+</html>
