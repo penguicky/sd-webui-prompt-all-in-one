@@ -2496,7 +2496,23 @@ export default {
       return tag.weightNum;
     },
 
-    // Get the style object for the extend menu with dynamic positioning
+    /**
+     * Get the style object for the extend menu with dynamic positioning
+     *
+     * This method provides dynamic positioning for the weight control menu when
+     * hovering over individual terms within category declarations. It calculates
+     * the precise position to display the menu above the specific hovered term
+     * rather than the default tag position.
+     *
+     * Features:
+     * - Dynamic positioning for category term interactions
+     * - Fallback to default positioning for regular tags
+     * - Proper z-index management for menu visibility
+     * - Responsive positioning based on term location
+     *
+     * @param {Object} tag - The tag object for which to calculate menu style
+     * @returns {Object} CSS style object for the extend menu
+     */
     getExtendMenuStyle(tag) {
       const baseStyle = {
         display:

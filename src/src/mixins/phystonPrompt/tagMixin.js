@@ -988,7 +988,21 @@ export default {
       );
     },
 
-    // Handle mouse enter on category terms
+    /**
+     * Handle mouse enter event on individual category term wrapper
+     *
+     * This method enables interaction with individual terms within category declarations
+     * like {category: term1, term2, term3}. When a user hovers over a specific term,
+     * it captures the term data, calculates positioning, and shows the weight control menu.
+     *
+     * Key Features:
+     * - Detects hover over individual terms within categories
+     * - Calculates precise positioning for dynamic menu placement
+     * - Integrates with existing btn-tag-extend menu system
+     * - Preserves category structure during term modifications
+     *
+     * @param {MouseEvent} event - The mouse enter event from category term wrapper
+     */
     _onCategoryTermMouseEnter(event) {
       const target = event.target;
       const termWrapper = target.closest(".category-term-wrapper");
@@ -1034,7 +1048,15 @@ export default {
       }
     },
 
-    // Handle mouse leave on category terms
+    /**
+     * Handle mouse leave event on individual category term wrapper
+     *
+     * This method cleans up the category term hover state when the user moves
+     * the mouse away from an individual term. It ensures proper cleanup of
+     * hover data and menu state.
+     *
+     * @param {MouseEvent} event - The mouse leave event from category term wrapper
+     */
     _onCategoryTermMouseLeave(event) {
       const target = event.target;
       const termWrapper = target.closest(".category-term-wrapper");
@@ -1096,7 +1118,25 @@ export default {
       return weightNum || 1.0;
     },
 
-    // Modify individual term within a category declaration
+    /**
+     * Modify individual term within a category declaration while preserving structure
+     *
+     * This method handles weight modifications for individual terms within category
+     * declarations like {category: term1, term2, term3}. It parses the category,
+     * modifies the specific term, and reconstructs the category while maintaining
+     * the overall structure and other terms.
+     *
+     * Supported Actions:
+     * - "inc": Increase weight using parentheses (term) or {term} for NovelAI
+     * - "dec": Decrease weight using brackets [term]
+     * - "set": Set specific weight using colon syntax (term:1.2)
+     *
+     * @param {Object} tag - The parent category tag object
+     * @param {number} termIndex - Index of the term within the category
+     * @param {string} originalTermValue - Original value of the term being modified
+     * @param {string} action - Type of modification: "inc", "dec", or "set"
+     * @param {number} value - Weight value or increment/decrement amount
+     */
     _modifyCategoryTerm(tag, termIndex, originalTermValue, action, value) {
       const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
       const match = tag.value.match(categoryRegex);
