@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LoRA Weight Fix Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .test-case {
+        background: #f5f5f5;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .result {
+        background: #e8f5e8;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 3px;
+      }
+      .error {
+        background: #ffe8e8;
+        color: #d00;
+      }
+      .success {
+        background: #e8f5e8;
+        color: #080;
+      }
+      code {
+        background: #eee;
+        padding: 2px 4px;
+        border-radius: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>LoRA Weight Adjustment Fix Test</h1>
+    <p>
+      This test validates that LoRA tags within category declarations are
+      handled correctly.
+    </p>
+
+    <div id="test-results"></div>
+
+    <script>
+      // Mock common utilities for testing
+      const common = {
+        loraRegex: /^<lora:\s*([^:]+)\s*(:)?\s*(\-?[0-9\.]+)?([^>]+)?>/,
+        lycoRegex: /^<lyco:\s*([^:]+)\s*(:)?\s*(\-?[0-9\.]+)?([^>]+)?>/,
+      };
+
+      // The LoRA weight modification function from the fix
+      function _modifyLoraWeight(loraTag, action, value) {
+        // Match LoRA syntax: <lora:name:weight> or <lyco:name:weight>
+        const loraRegex = /^<(lora|lyco):([^:>]+):([^>]+)>/;
+        const match = loraTag.match(loraRegex);
+
+        if (!match) return loraTag; // Not a LoRA tag, return unchanged
+
+        const [, type, name, strengthStr] = match;
+
+        // Extract the numeric weight from the strength string
+        const weightMatch = strengthStr.match(/^(\-?[0-9\.]+)/);
+        if (!weightMatch) return loraTag; // No valid weight found
+
+        let currentWeight = parseFloat(weightMatch[1]);
+        let newWeight = currentWeight;
+
+        // Apply weight modification based on action
+        switch (action) {
+          case "inc":
+            newWeight = currentWeight + value * 0.1; // Increment by 0.1 * value
+            break;
+          case "dec":
+            newWeight = currentWeight - value * 0.1; // Decrement by 0.1 * value
+            break;
+          case "set":
+            newWeight = value; // Set to specific value
+            break;
+        }
+
+        // Ensure weight doesn't go below 0
+        newWeight = Math.max(0, newWeight);
+
+        // Round to 1 decimal place to avoid floating point precision issues
+        newWeight = Math.round(newWeight * 10) / 10;
+
+        // Replace the weight in the original strength string
+        const newStrengthStr = strengthStr.replace(
+          /^(\-?[0-9\.]+)/,
+          newWeight.toString()
+        );
+
+        return `<${type}:${name}:${newStrengthStr}>`;
+      }
+
+      // Test cases
+      const testCases = [
+        {
+          name: "🐛 BUG FIX: LoRA increment from 1.0 to 1.1 (exact bug scenario)",
+          input: "<lora:lora_name:1>",
+          action: "inc",
+          value: 1,
+          expected: "<lora:lora_name:1.1>",
+          buggyOutput: "(<lora:lora_name:1>:1.1)",
+        },
+        {
+          name: "LoRA increment from 0.8 to 1.0",
+          input: "<lora:test_lora:0.8>",
+          action: "inc",
+          value: 2,
+          expected: "<lora:test_lora:1.0>",
+        },
+        {
+          name: "LoRA decrement from 1.2 to 1.0",
+          input: "<lora:another_lora:1.2>",
+          action: "dec",
+          value: 2,
+          expected: "<lora:another_lora:1.0>",
+        },
+        {
+          name: "LoRA set weight to 1.5",
+          input: "<lora:custom_lora:1.0>",
+          action: "set",
+          value: 1.5,
+          expected: "<lora:custom_lora:1.5>",
+        },
+        {
+          name: "LyCO increment from 0.5 to 0.7",
+          input: "<lyco:lyco_name:0.5>",
+          action: "inc",
+          value: 2,
+          expected: "<lyco:lyco_name:0.7>",
+        },
+        {
+          name: "LoRA with metadata preservation",
+          input: "<lora:complex_lora:1.0:1,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0>",
+          action: "set",
+          value: 0.8,
+          expected: "<lora:complex_lora:0.8:1,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0,0>",
+        },
+        {
+          name: "LoRA decrement to minimum (0)",
+          input: "<lora:min_test:0.1>",
+          action: "dec",
+          value: 2,
+          expected: "<lora:min_test:0>",
+        },
+        {
+          name: "Non-LoRA tag should remain unchanged",
+          input: "regular_term",
+          action: "inc",
+          value: 1,
+          expected: "regular_term",
+        },
+      ];
+
+      // Run tests
+      function runTests() {
+        const resultsDiv = document.getElementById("test-results");
+        let passedTests = 0;
+        let totalTests = testCases.length;
+
+        testCases.forEach((testCase, index) => {
+          const result = _modifyLoraWeight(
+            testCase.input,
+            testCase.action,
+            testCase.value
+          );
+          const passed = result === testCase.expected;
+
+          if (passed) passedTests++;
+
+          const testDiv = document.createElement("div");
+          testDiv.className = "test-case";
+          testDiv.innerHTML = `
+                    <h3>Test ${index + 1}: ${testCase.name}</h3>
+                    <p><strong>Input:</strong> <code>${
+                      testCase.input
+                    }</code></p>
+                    <p><strong>Action:</strong> ${testCase.action} (value: ${
+            testCase.value
+          })</p>
+                    <p><strong>Expected:</strong> <code>${
+                      testCase.expected
+                    }</code></p>
+                    <div class="result ${passed ? "success" : "error"}">
+                        <strong>Result:</strong> <code>${result}</code> 
+                        ${passed ? "✅ PASS" : "❌ FAIL"}
+                    </div>
+                `;
+          resultsDiv.appendChild(testDiv);
+        });
+
+        // Summary
+        const summaryDiv = document.createElement("div");
+        summaryDiv.className = `test-case ${
+          passedTests === totalTests ? "success" : "error"
+        }`;
+        summaryDiv.innerHTML = `
+                <h2>Test Summary</h2>
+                <p><strong>Passed:</strong> ${passedTests}/${totalTests}</p>
+                <p><strong>Status:</strong> ${
+                  passedTests === totalTests
+                    ? "✅ All tests passed!"
+                    : "❌ Some tests failed"
+                }</p>
+            `;
+        resultsDiv.appendChild(summaryDiv);
+      }
+
+      // Run tests when page loads
+      document.addEventListener("DOMContentLoaded", runTests);
+    </script>
+  </body>
+</html>

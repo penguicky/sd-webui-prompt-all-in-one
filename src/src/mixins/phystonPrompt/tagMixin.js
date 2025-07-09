@@ -1119,6 +1119,58 @@ export default {
     },
 
     /**
+     * Helper function to modify LoRA weight values
+     *
+     * @param {string} loraTag - The LoRA tag to modify (e.g., "<lora:name:1.0>")
+     * @param {string} action - Type of modification: "inc", "dec", or "set"
+     * @param {number} value - Weight value or increment/decrement amount
+     * @returns {string} Modified LoRA tag
+     */
+    _modifyLoraWeight(loraTag, action, value) {
+      // Match LoRA syntax: <lora:name:weight> or <lyco:name:weight>
+      const loraRegex = /^<(lora|lyco):([^:>]+):([^>]+)>/;
+      const match = loraTag.match(loraRegex);
+
+      if (!match) return loraTag; // Not a LoRA tag, return unchanged
+
+      const [, type, name, strengthStr] = match;
+
+      // Extract the numeric weight from the strength string
+      const weightMatch = strengthStr.match(/^(\-?[0-9\.]+)/);
+      if (!weightMatch) return loraTag; // No valid weight found
+
+      let currentWeight = parseFloat(weightMatch[1]);
+      let newWeight = currentWeight;
+
+      // Apply weight modification based on action
+      switch (action) {
+        case "inc":
+          newWeight = currentWeight + value * 0.1; // Increment by 0.1 * value
+          break;
+        case "dec":
+          newWeight = currentWeight - value * 0.1; // Decrement by 0.1 * value
+          break;
+        case "set":
+          newWeight = value; // Set to specific value
+          break;
+      }
+
+      // Ensure weight doesn't go below 0
+      newWeight = Math.max(0, newWeight);
+
+      // Round to 1 decimal place to avoid floating point precision issues
+      newWeight = Math.round(newWeight * 10) / 10;
+
+      // Replace the weight in the original strength string
+      const newStrengthStr = strengthStr.replace(
+        /^(\-?[0-9\.]+)/,
+        newWeight.toString()
+      );
+
+      return `<${type}:${name}:${newStrengthStr}>`;
+    },
+
+    /**
      * Modify individual term within a category declaration while preserving structure
      *
      * This method handles weight modifications for individual terms within category
@@ -1130,6 +1182,7 @@ export default {
      * - "inc": Increase weight using parentheses (term) or {term} for NovelAI
      * - "dec": Decrease weight using brackets [term]
      * - "set": Set specific weight using colon syntax (term:1.2)
+     * - For LoRA tags: Modifies internal weight parameter directly
      *
      * @param {Object} tag - The parent category tag object
      * @param {number} termIndex - Index of the term within the category
@@ -1150,37 +1203,47 @@ export default {
 
       let modifiedTerm = terms[termIndex];
 
-      // Apply weight modification based on action
-      switch (action) {
-        case "inc":
-          // Add parentheses for emphasis
-          if (this.useNovelAiWeightSymbol) {
-            modifiedTerm = common.setLayers(modifiedTerm, value, "{", "}");
-          } else {
-            modifiedTerm = common.setLayers(modifiedTerm, value, "(", ")");
-          }
-          break;
+      // Check if this is a LoRA or LyCO tag
+      const isLoraTag =
+        common.loraRegex.test(modifiedTerm) ||
+        common.lycoRegex.test(modifiedTerm);
 
-        case "dec":
-          // Add brackets for de-emphasis
-          modifiedTerm = common.setLayers(modifiedTerm, value, "[", "]");
-          break;
-
-        case "set":
-          // Set specific weight using colon syntax
-          // Remove existing weight syntax first
-          modifiedTerm = modifiedTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
-          modifiedTerm = modifiedTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
-
-          if (value !== 1.0 && value !== 1) {
-            // Apply new weight with colon syntax
+      if (isLoraTag) {
+        // For LoRA tags, modify the internal weight parameter
+        modifiedTerm = this._modifyLoraWeight(modifiedTerm, action, value);
+      } else {
+        // For regular terms, apply standard weight syntax
+        switch (action) {
+          case "inc":
+            // Add parentheses for emphasis
             if (this.useNovelAiWeightSymbol) {
-              modifiedTerm = `{${modifiedTerm}:${value}}`;
+              modifiedTerm = common.setLayers(modifiedTerm, value, "{", "}");
             } else {
-              modifiedTerm = `(${modifiedTerm}:${value})`;
+              modifiedTerm = common.setLayers(modifiedTerm, value, "(", ")");
             }
-          }
-          break;
+            break;
+
+          case "dec":
+            // Add brackets for de-emphasis
+            modifiedTerm = common.setLayers(modifiedTerm, value, "[", "]");
+            break;
+
+          case "set":
+            // Set specific weight using colon syntax
+            // Remove existing weight syntax first
+            modifiedTerm = modifiedTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
+            modifiedTerm = modifiedTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
+
+            if (value !== 1.0 && value !== 1) {
+              // Apply new weight with colon syntax
+              if (this.useNovelAiWeightSymbol) {
+                modifiedTerm = `{${modifiedTerm}:${value}}`;
+              } else {
+                modifiedTerm = `(${modifiedTerm}:${value})`;
+              }
+            }
+            break;
+        }
       }
 
       // Update the term in the array
