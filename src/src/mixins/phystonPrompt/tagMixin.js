@@ -254,7 +254,7 @@ export default {
 
         // Check if the term is an embedding
         const isEmbedding = this.embeddingExists(term.trim()) !== false;
-        const termClass = isEmbedding ? "embedding-tag" : "character";
+        const termClass = isEmbedding ? "embedding-content" : "character";
 
         return `<span class="weight-punctuation">${openBracket}</span><span class="${termClass}">${common.escapeHtml(
           term
@@ -371,8 +371,9 @@ export default {
           // Determine term type and apply appropriate highlighting
           let termClass = "character";
 
-          // Check if it's an embedding
-          if (this.embeddingExists(term) !== false) {
+          // Check if it's an embedding (extract base term first)
+          const baseTerm = this._extractBaseTerm(term);
+          if (this.embeddingExists(baseTerm) !== false) {
             termClass = "embedding-content";
           }
           // Check if it's a basic LoRA (without strength) - use lora-content class for orange highlighting
@@ -1011,11 +1012,16 @@ export default {
         const tagRect = tagElement.getBoundingClientRect();
 
         // Store category term hover data with position information
+        // Unescape HTML entities from the term value
+        const unescapedTermValue = termValue
+          ? this._unescapeHtml(termValue)
+          : termValue;
+
         this.categoryTermHoverData = {
           tagId: tagId,
           tag: tag,
           termId: termId,
-          termValue: termValue,
+          termValue: unescapedTermValue,
           termIndex: termIndex,
           termWrapper: termWrapper,
           position: {
@@ -1182,9 +1188,6 @@ export default {
 
       // Force re-render to ensure syntax highlighting is updated
       this.$nextTick(() => {
-        // Re-apply tag classes to ensure proper syntax highlighting
-        this._setTagClass(tag);
-
         // Force custom colors to be applied if available
         if (this._applyCustomColorsToTags) {
           this._applyCustomColorsToTags();
@@ -1220,6 +1223,13 @@ export default {
       cleanTerm = cleanTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
 
       return cleanTerm.trim();
+    },
+
+    // Helper function to unescape HTML entities
+    _unescapeHtml(str) {
+      const div = document.createElement("div");
+      div.innerHTML = str;
+      return div.textContent || div.innerText || "";
     },
 
     // Helper function to modify LoRA weight syntax properly

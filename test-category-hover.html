@@ -434,6 +434,34 @@
         </li>
       </ul>
 
+      <h3>Latest Critical Bug Fixes</h3>
+      <ul>
+        <li>
+          🔧 <strong>Fixed Embedding Class Inconsistency:</strong> Changed
+          embedding highlighting from "embedding-tag" to "embedding-content" for
+          consistent blue coloring
+        </li>
+        <li>
+          🔧 <strong>Enhanced Base Term Detection:</strong> Improved embedding
+          detection in category declarations to extract base terms before
+          checking embedding existence
+        </li>
+        <li>
+          🐛 <strong>Fixed HTML Escaping Issue:</strong> Added proper HTML
+          unescaping for term values retrieved from DOM attributes to prevent
+          LoRA corruption
+        </li>
+        <li>
+          ⚡ <strong>Optimized Re-rendering:</strong> Removed unnecessary
+          _setTagClass calls that could cause unintended tag processing during
+          category modifications
+        </li>
+        <li>
+          🔍 <strong>Improved Hover Data Handling:</strong> Enhanced term value
+          processing to maintain original LoRA syntax during hover interactions
+        </li>
+      </ul>
+
       <h3>Recent Changes</h3>
       <ul>
         <li>
