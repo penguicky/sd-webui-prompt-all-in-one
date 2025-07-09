@@ -187,10 +187,21 @@ export default {
       // Make textarea transparent but keep caret visible
       this.targetTextarea.style.background = "transparent";
       this.targetTextarea.style.color = "transparent";
-      this.targetTextarea.style.caretColor = "#ffffff";
+
+      // Dynamically determine optimal cursor color based on background
+      const optimalCursorColor = this.getOptimalCursorColor();
+      this.targetTextarea.style.caretColor = optimalCursorColor;
+
       this.targetTextarea.style.zIndex = "2";
       this.targetTextarea.style.resize = "none";
       this.targetTextarea.style.outline = "none";
+
+      // Ensure cursor is always visible and properly styled
+      this.targetTextarea.style.caretWidth = "2px";
+
+      // Add focus event listener to enhance cursor visibility
+      this.targetTextarea.addEventListener("focus", this.onTextareaFocus);
+      this.targetTextarea.addEventListener("blur", this.onTextareaBlur);
 
       // Don't remove the border completely - make it transparent instead
       this.targetTextarea.style.borderColor = "transparent";
@@ -322,7 +333,26 @@ export default {
 
       // Process text character by character, handling enhanced syntax patterns
       while (currentPos < text.length) {
-        // Try to parse enhanced weight syntax first (e.g., (term:1.2))
+        // Try to parse category declaration syntax first (e.g., {category: term1, term2})
+        const categoryDeclaration = this.parseCategoryDeclaration(
+          text,
+          currentPos
+        );
+        if (categoryDeclaration) {
+          tokens.push(...categoryDeclaration.tokens);
+          currentPos += categoryDeclaration.length;
+          continue;
+        }
+
+        // Try to parse category reference syntax (e.g., {category})
+        const categoryReference = this.parseCategoryReference(text, currentPos);
+        if (categoryReference) {
+          tokens.push(...categoryReference.tokens);
+          currentPos += categoryReference.length;
+          continue;
+        }
+
+        // Try to parse enhanced weight syntax (e.g., (term:1.2))
         const weightSyntax = this.parseWeightSyntax(text, currentPos);
         if (weightSyntax) {
           tokens.push(...weightSyntax.tokens);
@@ -376,7 +406,8 @@ export default {
         }
 
         // Check for regular words (potential embeddings or regular terms)
-        const wordMatch = remainingText.match(/^([a-zA-Z_][a-zA-Z0-9_-]*)/);
+        // Updated regex to include numeric prefixes for embeddings like 3d_model, 2girls, 1boy
+        const wordMatch = remainingText.match(/^([a-zA-Z0-9_][a-zA-Z0-9_-]*)/);
         if (wordMatch) {
           const word = wordMatch[1];
           const isEmbedding = this.embeddingExists(word) !== false;
@@ -450,6 +481,69 @@ export default {
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
+    },
+
+    // Helper method to determine optimal cursor color based on background
+    getOptimalCursorColor() {
+      try {
+        // Get the computed background color of the textarea or its parent
+        const computedStyle = window.getComputedStyle(this.targetTextarea);
+        const backgroundColor = computedStyle.backgroundColor;
+
+        // If background is transparent, check parent elements
+        if (
+          backgroundColor === "transparent" ||
+          backgroundColor === "rgba(0, 0, 0, 0)"
+        ) {
+          let parent = this.targetTextarea.parentElement;
+          while (parent && parent !== document.body) {
+            const parentStyle = window.getComputedStyle(parent);
+            if (
+              parentStyle.backgroundColor !== "transparent" &&
+              parentStyle.backgroundColor !== "rgba(0, 0, 0, 0)"
+            ) {
+              return this.isDarkColor(parentStyle.backgroundColor)
+                ? "#ffffff"
+                : "#000000";
+            }
+            parent = parent.parentElement;
+          }
+        }
+
+        // Check if the background color is dark or light
+        return this.isDarkColor(backgroundColor) ? "#ffffff" : "#000000";
+      } catch (error) {
+        // Fallback to black cursor if detection fails
+        console.warn(
+          "Could not detect background color for cursor, using default:",
+          error
+        );
+        return "#000000";
+      }
+    },
+
+    // Helper method to determine if a color is dark
+    isDarkColor(color) {
+      try {
+        // Handle different color formats
+        if (color.startsWith("rgb")) {
+          const matches = color.match(/\d+/g);
+          if (matches && matches.length >= 3) {
+            const r = parseInt(matches[0]);
+            const g = parseInt(matches[1]);
+            const b = parseInt(matches[2]);
+            // Calculate luminance
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance < 0.5;
+          }
+        }
+
+        // For other color formats, assume light background
+        return false;
+      } catch (error) {
+        // Default to light background assumption
+        return false;
+      }
     },
 
     // Helper function to parse and highlight weight syntax with colons
@@ -655,6 +749,174 @@ export default {
       return null;
     },
 
+    // Helper function to parse category declaration syntax
+    parseCategoryDeclaration(text, startPos) {
+      // Check for category declaration syntax like {category_name: term1, term2, term3}
+      // Must contain colon followed by non-numeric content to distinguish from weight syntax
+      const categoryRegex = /^{([^:}]+):\s*([^}]+)}/;
+      const remainingText = text.slice(startPos);
+      const match = remainingText.match(categoryRegex);
+
+      if (match) {
+        const [fullMatch, categoryName, termsStr] = match;
+
+        // Check if this is actually weight syntax (numeric value after colon)
+        const isWeightSyntax = /^\s*\-?[0-9\.]+\s*$/.test(termsStr);
+        if (isWeightSyntax) {
+          return null; // Let weight syntax parser handle this
+        }
+
+        const tokens = [
+          {
+            type: "category-punctuation",
+            text: "{",
+            className: "highlight-weight-punctuation",
+          },
+          {
+            type: "category-name",
+            text: categoryName,
+            className: "highlight-category-name",
+          },
+          {
+            type: "category-punctuation",
+            text: ":",
+            className: "highlight-weight-punctuation",
+          },
+        ];
+
+        // Parse individual terms within the category
+        const terms = termsStr.split(",").map((term) => term.trim());
+
+        for (let i = 0; i < terms.length; i++) {
+          const term = terms[i];
+
+          if (i > 0) {
+            // Add comma separator
+            tokens.push({
+              type: "category-separator",
+              text: ",",
+              className: null,
+            });
+          }
+
+          // Add space before each term (after colon or comma)
+          tokens.push({
+            type: "category-space",
+            text: " ",
+            className: null,
+          });
+
+          // Check if the term contains weight syntax and parse it recursively
+          const weightSyntaxTokens = this.parseWeightSyntax(term, 0);
+          if (weightSyntaxTokens) {
+            // Term contains weight syntax, add the parsed tokens
+            tokens.push(...weightSyntaxTokens.tokens);
+            continue;
+          }
+
+          // Check if it's a LoRA with strength (complex format)
+          const loraTokens = this.parseEnhancedLoraSyntax(term, 0);
+          if (loraTokens) {
+            // Parse the complex LoRA syntax within the category
+            tokens.push(...loraTokens.tokens);
+            continue;
+          }
+
+          // Check if it's an embedding syntax
+          const embeddingTokens = this.parseEmbeddingSyntax(term, 0);
+          if (embeddingTokens) {
+            tokens.push(...embeddingTokens.tokens);
+            continue;
+          }
+
+          // Determine term type and apply appropriate highlighting
+          let termClassName = "highlight-regular";
+
+          // Check if it's an embedding
+          if (this.embeddingExists(term) !== false) {
+            termClassName = "highlight-embedding";
+          }
+          // Check if it's a LoRA (basic format without strength)
+          else if (term.match(/^<(lora|lyco):[^:>]+>$/)) {
+            termClassName = "highlight-lora";
+          }
+
+          tokens.push({
+            type: "category-term",
+            text: term,
+            className: termClassName,
+          });
+        }
+
+        tokens.push({
+          type: "category-punctuation",
+          text: "}",
+          className: "highlight-weight-punctuation",
+        });
+
+        return {
+          tokens: tokens,
+          length: fullMatch.length,
+        };
+      }
+
+      return null;
+    },
+
+    // Helper function to parse category reference syntax
+    parseCategoryReference(text, startPos) {
+      // Check for category reference syntax like {category_name}
+      // No colon, just a name within braces
+      const categoryRefRegex = /^{([^:}]+)}$/;
+      const remainingText = text.slice(startPos);
+      const match = remainingText.match(categoryRefRegex);
+
+      if (match) {
+        const [fullMatch, categoryName] = match;
+
+        return {
+          tokens: [
+            {
+              type: "category-ref-punctuation",
+              text: "{",
+              className: "highlight-weight-punctuation",
+            },
+            {
+              type: "category-ref-name",
+              text: categoryName,
+              className: "highlight-category-name",
+            },
+            {
+              type: "category-ref-punctuation",
+              text: "}",
+              className: "highlight-weight-punctuation",
+            },
+          ],
+          length: fullMatch.length,
+        };
+      }
+
+      return null;
+    },
+
+    // Enhanced focus handling for better cursor visibility
+    onTextareaFocus() {
+      if (this.targetTextarea) {
+        // Use a more prominent cursor color when focused
+        this.targetTextarea.style.caretColor = "#007bff";
+        // Ensure the cursor is visible
+        this.targetTextarea.style.caretWidth = "2px";
+      }
+    },
+
+    onTextareaBlur() {
+      if (this.targetTextarea) {
+        // Restore optimal cursor color when not focused
+        const optimalCursorColor = this.getOptimalCursorColor();
+        this.targetTextarea.style.caretColor = optimalCursorColor;
+      }
+    },
+
     cleanup() {
       if (this.targetTextarea) {
         this.targetTextarea.removeEventListener("input", this.onTextareaInput);
@@ -662,11 +924,15 @@ export default {
           "scroll",
           this.onTextareaScroll
         );
+        this.targetTextarea.removeEventListener("focus", this.onTextareaFocus);
+        this.targetTextarea.removeEventListener("blur", this.onTextareaBlur);
 
         // Restore original textarea styles
         this.targetTextarea.style.background = "";
         this.targetTextarea.style.color = "";
         this.targetTextarea.style.caretColor = "";
+        this.targetTextarea.style.caretWidth = "";
+        this.targetTextarea.style.caretShape = "";
         this.targetTextarea.style.zIndex = "";
         this.targetTextarea.style.gridArea = "";
         this.targetTextarea.style.borderColor = "";
@@ -782,5 +1048,35 @@ export default {
 :deep(.highlight-lora-punctuation) {
   color: #9966cc !important;
   background: transparent !important;
+}
+
+:deep(.highlight-category-name) {
+  color: #ff69b4 !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+}
+
+/* Enhanced cursor visibility for highlighted textareas */
+textarea[style*="color: transparent"] {
+  caret-color: #000000 !important;
+}
+
+/* Dark theme support for cursor */
+@media (prefers-color-scheme: dark) {
+  textarea[style*="color: transparent"] {
+    caret-color: #ffffff !important;
+  }
+}
+
+/* Focus state enhancement for highlighted textareas */
+textarea[style*="color: transparent"]:focus {
+  caret-color: #007bff !important;
+  outline: none !important;
+}
+
+/* Ensure cursor is visible during text selection */
+textarea[style*="color: transparent"]::selection {
+  background: rgba(0, 123, 255, 0.3) !important;
+  color: transparent !important;
 }
 </style>
