@@ -1236,6 +1236,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    autoNormalizeCategoryFormat: {
+      type: Boolean,
+      default: true,
+    },
     hideDefaultInput: {
       type: Boolean,
       default: false,
@@ -1616,6 +1620,16 @@ export default {
           if (value !== tag.value) {
             tag.value = value;
             this._setTag(tag);
+          }
+
+          // Apply category format normalization if enabled
+          if (this.autoNormalizeCategoryFormat) {
+            let normalizedValue = this._normalizeCategoryFormat(value);
+            if (normalizedValue !== value) {
+              value = normalizedValue;
+              tag.value = normalizedValue;
+              this._setTag(tag);
+            }
           }
           let localValue = common.replaceTag(tag.localValue);
           if (localValue !== tag.localValue) {
@@ -2541,6 +2555,55 @@ export default {
 
       // Default positioning for regular tags
       return baseStyle;
+    },
+
+    /**
+     * Normalize category declaration format
+     *
+     * This method standardizes category declarations to the exact format:
+     * {category: term1, term2, term3}
+     *
+     * Formatting rules:
+     * - Exactly one space after colon
+     * - Exactly one space after each comma
+     * - No trailing comma before closing brace
+     * - Preserve term weights within individual terms
+     *
+     * @param {string} value - The tag value to normalize
+     * @returns {string} The normalized value or original if not a category declaration
+     */
+    _normalizeCategoryFormat(value) {
+      // Check if this is a category declaration
+      const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
+      const match = value.match(categoryRegex);
+
+      if (!match) {
+        return value; // Not a category declaration, return unchanged
+      }
+
+      const [, categoryName, termsStr] = match;
+
+      // Check if this is actually weight syntax (numeric value after colon)
+      const isWeightSyntax = /^\s*\-?[0-9\.]+\s*$/.test(termsStr);
+      if (isWeightSyntax) {
+        return value; // This is weight syntax, not category declaration
+      }
+
+      // Parse and normalize terms
+      const terms = termsStr
+        .split(",")
+        .map((term) => term.trim())
+        .filter((term) => term.length > 0);
+
+      if (terms.length === 0) {
+        return value; // No valid terms found
+      }
+
+      // Reconstruct with normalized format
+      const normalizedCategoryName = categoryName.trim();
+      const normalizedTerms = terms.join(", ");
+
+      return `{${normalizedCategoryName}: ${normalizedTerms}}`;
     },
   },
 };

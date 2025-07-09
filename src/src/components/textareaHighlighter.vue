@@ -83,16 +83,23 @@ export default {
       // Apply the CSS Grid overlay technique
       this.applyOverlayStyles();
 
-      // Set up event listeners
-      this.targetTextarea.addEventListener("input", this.onTextareaInput);
-      this.targetTextarea.addEventListener("scroll", this.onTextareaScroll);
-
-      // Add window resize listener to maintain alignment
-      window.addEventListener("resize", this.onWindowResize);
-
       // Initial highlighting
       this.updateHighlighting();
+    },
 
+    setupObservers() {
+      if (!this.targetTextarea) return;
+
+      // Set up event listeners for the textarea
+      this.targetTextarea.addEventListener("input", this.onTextareaInput);
+      this.targetTextarea.addEventListener("scroll", this.onTextareaScroll);
+      this.targetTextarea.addEventListener("focus", this.onTextareaFocus);
+      this.targetTextarea.addEventListener("blur", this.onTextareaBlur);
+
+      // Set up window resize listener
+      window.addEventListener("resize", this.onWindowResize);
+
+      // Mark as active
       this.isActive = true;
     },
 
@@ -198,10 +205,6 @@ export default {
 
       // Ensure cursor is always visible and properly styled
       this.targetTextarea.style.caretWidth = "2px";
-
-      // Add focus event listener to enhance cursor visibility
-      this.targetTextarea.addEventListener("focus", this.onTextareaFocus);
-      this.targetTextarea.addEventListener("blur", this.onTextareaBlur);
 
       // Don't remove the border completely - make it transparent instead
       this.targetTextarea.style.borderColor = "transparent";

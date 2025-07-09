@@ -31,6 +31,7 @@
         v-model:auto-remove-lora-after-comma="autoRemoveLoraAfterComma"
         v-model:use-novel-ai-weight-symbol="useNovelAiWeightSymbol"
         v-model:auto-remove-before-line-comma="autoRemoveBeforeLineComma"
+        v-model:auto-normalize-category-format="autoNormalizeCategoryFormat"
         :hide-default-input="item.hideDefaultInput"
         @update:hide-default-input="onUpdateHideDefaultInput(item.id, $event)"
         :auto-load-webui-prompt="item.autoLoadWebuiPrompt"
@@ -116,6 +117,7 @@
       v-model:auto-remove-lora-after-comma="autoRemoveLoraAfterComma"
       v-model:use-novel-ai-weight-symbol="useNovelAiWeightSymbol"
       v-model:auto-remove-before-line-comma="autoRemoveBeforeLineComma"
+      v-model:auto-normalize-category-format="autoNormalizeCategoryFormat"
     ></prompt-format>
     <blacklist
       ref="blacklist"
@@ -398,6 +400,7 @@ export default {
       autoRemoveLoraAfterComma: false,
       useNovelAiWeightSymbol: false,
       autoRemoveBeforeLineComma: false,
+      autoNormalizeCategoryFormat: true,
       // hideDefaultInput: false,
       enableTooltip: true,
       enableNativeHighlighting: true,
@@ -634,6 +637,16 @@ export default {
         console.log("onAutoRemoveBeforeLineCommaChange", val);
         this.gradioAPI
           .setData("autoRemoveBeforeLineComma", val)
+          .then((data) => {})
+          .catch((err) => {});
+      },
+    },
+    autoNormalizeCategoryFormat: {
+      handler: function (val, oldVal) {
+        if (!this.startWatchSave) return;
+        console.log("onAutoNormalizeCategoryFormatChange", val);
+        this.gradioAPI
+          .setData("autoNormalizeCategoryFormat", val)
           .then((data) => {})
           .catch((err) => {});
       },
@@ -882,6 +895,7 @@ export default {
         "autoRemoveLoraAfterComma",
         "useNovelAiWeightSymbol",
         "autoRemoveBeforeLineComma",
+        "autoNormalizeCategoryFormat",
         /*'hideDefaultInput', */ "translateApi",
         "enableTooltip",
         "enableNativeHighlighting",
@@ -904,117 +918,123 @@ export default {
         dataListsKeys.push(item.hideGroupTagsKey);
       });
 
-      this.gradioAPI.getDatas(dataListsKeys).then((data) => {
-        if (data.languageCode !== null) {
-          let findLang = false;
-          for (let key in this.languages) {
-            if (this.languages[key].code === data.languageCode) {
-              findLang = true;
-              break;
-            }
-          }
-          if (findLang) {
-            this.languageCode = data.languageCode;
-            this.$forceUpdate();
-            this.gradioAPI.setData("languageCode", this.languageCode);
-          }
-        } else {
-          let browserLang = navigator.language || navigator.userLanguage || "";
-          if (browserLang) {
+      this.gradioAPI
+        .getDatas(dataListsKeys)
+        .then((data) => {
+          if (data.languageCode !== null) {
+            let findLang = false;
             for (let key in this.languages) {
-              if (common.isSameLang(this.languages[key].code, browserLang)) {
-                this.languageCode = this.languages[key].code;
-                this.$forceUpdate();
-                this.gradioAPI.setData("languageCode", this.languageCode);
+              if (this.languages[key].code === data.languageCode) {
+                findLang = true;
                 break;
               }
             }
-          }
-        }
-        this.canOneTranslate = common.canOneTranslate(this.languageCode);
-        if (data.autoTranslateToEnglish !== null) {
-          this.autoTranslateToEnglish = data.autoTranslateToEnglish;
-        }
-        if (data.autoTranslateToLocal !== null) {
-          this.autoTranslateToLocal = data.autoTranslateToLocal;
-        }
-        if (data.autoTranslate !== null) {
-          if (this.canOneTranslate) {
-            this.autoTranslate = data.autoTranslate;
-            this.autoTranslateToEnglish = this.autoTranslate;
-            this.autoTranslateToLocal = this.autoTranslate;
+            if (findLang) {
+              this.languageCode = data.languageCode;
+              this.$forceUpdate();
+              this.gradioAPI.setData("languageCode", this.languageCode);
+            }
           } else {
-            this.autoTranslate = false;
+            let browserLang =
+              navigator.language || navigator.userLanguage || "";
+            if (browserLang) {
+              for (let key in this.languages) {
+                if (common.isSameLang(this.languages[key].code, browserLang)) {
+                  this.languageCode = this.languages[key].code;
+                  this.$forceUpdate();
+                  this.gradioAPI.setData("languageCode", this.languageCode);
+                  break;
+                }
+              }
+            }
           }
-        } else {
-          if (this.canOneTranslate) {
-            this.autoTranslate =
-              this.autoTranslateToEnglish || this.autoTranslateToLocal;
-            this.autoTranslateToEnglish = true;
-            this.autoTranslateToLocal = true;
+          this.canOneTranslate = common.canOneTranslate(this.languageCode);
+          if (data.autoTranslateToEnglish !== null) {
+            this.autoTranslateToEnglish = data.autoTranslateToEnglish;
+          }
+          if (data.autoTranslateToLocal !== null) {
+            this.autoTranslateToLocal = data.autoTranslateToLocal;
+          }
+          if (data.autoTranslate !== null) {
+            if (this.canOneTranslate) {
+              this.autoTranslate = data.autoTranslate;
+              this.autoTranslateToEnglish = this.autoTranslate;
+              this.autoTranslateToLocal = this.autoTranslate;
+            } else {
+              this.autoTranslate = false;
+            }
           } else {
-            this.autoTranslate = false;
+            if (this.canOneTranslate) {
+              this.autoTranslate =
+                this.autoTranslateToEnglish || this.autoTranslateToLocal;
+              this.autoTranslateToEnglish = true;
+              this.autoTranslateToLocal = true;
+            } else {
+              this.autoTranslate = false;
+            }
           }
-        }
-        if (data.autoRemoveSpace !== null) {
-          this.autoRemoveSpace = data.autoRemoveSpace;
-        }
-        if (data.autoRemoveLastComma !== null) {
-          this.autoRemoveLastComma = data.autoRemoveLastComma;
-        }
-        if (data.autoKeepWeightZero !== null) {
-          this.autoKeepWeightZero = data.autoKeepWeightZero;
-        }
-        if (data.autoKeepWeightOne !== null) {
-          this.autoKeepWeightOne = data.autoKeepWeightOne;
-        }
-        if (data.autoBreakBeforeWrap !== null) {
-          this.autoBreakBeforeWrap = data.autoBreakBeforeWrap;
-        }
-        if (data.autoBreakAfterWrap !== null) {
-          this.autoBreakAfterWrap = data.autoBreakAfterWrap;
-        }
-        if (data.autoRemoveLoraBeforeComma !== null) {
-          this.autoRemoveLoraBeforeComma = data.autoRemoveLoraBeforeComma;
-        }
-        if (data.autoRemoveLoraAfterComma !== null) {
-          this.autoRemoveLoraAfterComma = data.autoRemoveLoraAfterComma;
-        }
-        if (data.useNovelAiWeightSymbol !== null) {
-          this.useNovelAiWeightSymbol = data.useNovelAiWeightSymbol;
-        }
-        if (data.autoRemoveBeforeLineComma !== null) {
-          this.autoRemoveBeforeLineComma = data.autoRemoveBeforeLineComma;
-        }
-        /*if (data.hideDefaultInput !== null) {
+          if (data.autoRemoveSpace !== null) {
+            this.autoRemoveSpace = data.autoRemoveSpace;
+          }
+          if (data.autoRemoveLastComma !== null) {
+            this.autoRemoveLastComma = data.autoRemoveLastComma;
+          }
+          if (data.autoKeepWeightZero !== null) {
+            this.autoKeepWeightZero = data.autoKeepWeightZero;
+          }
+          if (data.autoKeepWeightOne !== null) {
+            this.autoKeepWeightOne = data.autoKeepWeightOne;
+          }
+          if (data.autoBreakBeforeWrap !== null) {
+            this.autoBreakBeforeWrap = data.autoBreakBeforeWrap;
+          }
+          if (data.autoBreakAfterWrap !== null) {
+            this.autoBreakAfterWrap = data.autoBreakAfterWrap;
+          }
+          if (data.autoRemoveLoraBeforeComma !== null) {
+            this.autoRemoveLoraBeforeComma = data.autoRemoveLoraBeforeComma;
+          }
+          if (data.autoRemoveLoraAfterComma !== null) {
+            this.autoRemoveLoraAfterComma = data.autoRemoveLoraAfterComma;
+          }
+          if (data.useNovelAiWeightSymbol !== null) {
+            this.useNovelAiWeightSymbol = data.useNovelAiWeightSymbol;
+          }
+          if (data.autoRemoveBeforeLineComma !== null) {
+            this.autoRemoveBeforeLineComma = data.autoRemoveBeforeLineComma;
+          }
+          if (data.autoNormalizeCategoryFormat !== null) {
+            this.autoNormalizeCategoryFormat = data.autoNormalizeCategoryFormat;
+          }
+          /*if (data.hideDefaultInput !== null) {
                     this.hideDefaultInput = data.hideDefaultInput
                 }*/
-        if (data.enableTooltip !== null) {
-          this.enableTooltip = data.enableTooltip;
-        }
-        if (data.enableNativeHighlighting !== null) {
-          this.enableNativeHighlighting = data.enableNativeHighlighting;
-        }
-        localStorage.setItem(
-          "phystonPromptEnableTooltip",
-          this.enableTooltip ? "true" : "false"
-        );
-        this.updateTippyState();
-        if (data.translateApi !== null) {
-          this.translateApi = data.translateApi;
-          /*if (data.translateApi === 'alibaba_free') {
+          if (data.enableTooltip !== null) {
+            this.enableTooltip = data.enableTooltip;
+          }
+          if (data.enableNativeHighlighting !== null) {
+            this.enableNativeHighlighting = data.enableNativeHighlighting;
+          }
+          localStorage.setItem(
+            "phystonPromptEnableTooltip",
+            this.enableTooltip ? "true" : "false"
+          );
+          this.updateTippyState();
+          if (data.translateApi !== null) {
+            this.translateApi = data.translateApi;
+            /*if (data.translateApi === 'alibaba_free') {
                         this.gradioAPI.setData('translateApi', this.translateApi)
                     } else {
                         this.translateApi = data.translateApi
                     }*/
-        }
-        if (data.tagCompleteFile !== null) {
-          this.tagCompleteFile = data.tagCompleteFile;
-          waitTick.addWaitTick(() => {
-            this.$refs.translateSetting.getCSV(this.tagCompleteFile);
-          });
-        } else {
-          /*if (typeof TAC_CFG === 'object' && typeof QUEUE_FILE_LOAD === 'object') {
+          }
+          if (data.tagCompleteFile !== null) {
+            this.tagCompleteFile = data.tagCompleteFile;
+            waitTick.addWaitTick(() => {
+              this.$refs.translateSetting.getCSV(this.tagCompleteFile);
+            });
+          } else {
+            /*if (typeof TAC_CFG === 'object' && typeof QUEUE_FILE_LOAD === 'object') {
                         QUEUE_FILE_LOAD.push(() => {
                             if (typeof TAC_CFG.translation !== 'object' || typeof TAC_CFG.translation.translationFile !== 'string') return
                             if (!TAC_CFG.translation.translationFile) return
@@ -1022,119 +1042,121 @@ export default {
                             this.$refs.translateSetting.getCSV(this.tagCompleteFile)
                         })
                     }*/
-        }
-        if (data.onlyCsvOnAuto !== null) {
-          this.onlyCsvOnAuto = data.onlyCsvOnAuto;
-        }
+          }
+          if (data.onlyCsvOnAuto !== null) {
+            this.onlyCsvOnAuto = data.onlyCsvOnAuto;
+          }
 
-        if (data["extensionSelect.minimalist"] === null) {
-          this.gradioAPI.setData("extensionSelect.minimalist", true);
-        }
+          if (data["extensionSelect.minimalist"] === null) {
+            this.gradioAPI.setData("extensionSelect.minimalist", true);
+          }
 
-        if (data.groupTagsColor !== null) {
-          if (typeof data.groupTagsColor === "object") {
-            this.groupTagsColor = {};
-            for (let key in data.groupTagsColor) {
-              let color = data.groupTagsColor[key];
-              this.groupTagsColor[key] = ref(common.fitterInputColor(color));
+          if (data.groupTagsColor !== null) {
+            if (typeof data.groupTagsColor === "object") {
+              this.groupTagsColor = {};
+              for (let key in data.groupTagsColor) {
+                let color = data.groupTagsColor[key];
+                this.groupTagsColor[key] = ref(common.fitterInputColor(color));
+              }
             }
           }
-        }
 
-        if (data.groupTagsTranslate !== null) {
-          this.groupTagsTranslate = data.groupTagsTranslate;
-        }
-
-        if (data.blacklist !== null) {
-          this.blacklist = this._handleBlacklist(data.blacklist);
-        }
-
-        if (data.cancelBlacklistConfirm !== null) {
-          this.cancelBlacklistConfirm = data.cancelBlacklistConfirm;
-        }
-
-        if (data.hotkey !== null) {
-          this.hotkey = data.hotkey;
-        }
-
-        if (data.extraNetworksWidth !== null) {
-          this.extraNetworksWidth = data.extraNetworksWidth;
-        }
-
-        if (data.extraNetworksHeight !== null) {
-          this.extraNetworksHeight = data.extraNetworksHeight;
-        }
-
-        // Load syntax highlighting colors from storage
-        if (data.syntaxHighlightingColors !== null) {
-          this.syntaxHighlightingColors = { ...data.syntaxHighlightingColors };
-          if (process.env.NODE_ENV === "development") {
-            console.log(
-              "Loaded syntax highlighting colors from storage:",
-              this.syntaxHighlightingColors
-            );
+          if (data.groupTagsTranslate !== null) {
+            this.groupTagsTranslate = data.groupTagsTranslate;
           }
-        }
 
-        this.updateTranslateApiConfig();
-        this.$refs.extensionCss.init();
+          if (data.blacklist !== null) {
+            this.blacklist = this._handleBlacklist(data.blacklist);
+          }
 
-        // Apply syntax highlighting colors on startup
-        this.applySyntaxHighlightingColors();
+          if (data.cancelBlacklistConfirm !== null) {
+            this.cancelBlacklistConfirm = data.cancelBlacklistConfirm;
+          }
 
-        // Ensure colors are applied after a short delay for any late-loading components
-        setTimeout(() => {
+          if (data.hotkey !== null) {
+            this.hotkey = data.hotkey;
+          }
+
+          if (data.extraNetworksWidth !== null) {
+            this.extraNetworksWidth = data.extraNetworksWidth;
+          }
+
+          if (data.extraNetworksHeight !== null) {
+            this.extraNetworksHeight = data.extraNetworksHeight;
+          }
+
+          // Load syntax highlighting colors from storage
+          if (data.syntaxHighlightingColors !== null) {
+            this.syntaxHighlightingColors = {
+              ...data.syntaxHighlightingColors,
+            };
+            if (process.env.NODE_ENV === "development") {
+              console.log(
+                "Loaded syntax highlighting colors from storage:",
+                this.syntaxHighlightingColors
+              );
+            }
+          }
+
+          this.updateTranslateApiConfig();
+          this.$refs.extensionCss.init();
+
+          // Apply syntax highlighting colors on startup
           this.applySyntaxHighlightingColors();
-        }, 1000);
 
-        this.prompts.forEach((item) => {
-          if (data[item.hideDefaultInputKey] !== null) {
-            item.hideDefaultInput = data[item.hideDefaultInputKey];
-          }
-          if (data[item.autoLoadWebuiPromptKey] !== null) {
-            item.autoLoadWebuiPrompt = data[item.autoLoadWebuiPromptKey];
-          }
-          if (data[item.hidePanelKey] !== null) {
-            item.hidePanel = data[item.hidePanelKey];
-          }
-          if (data[item.hideGroupTagsKey] !== null) {
-            item.hideGroupTags = data[item.hideGroupTagsKey];
-          }
-          item.$prompt = common.gradioApp().querySelector("#" + item.prompt);
-          item.$textarea = item.$prompt.getElementsByTagName("textarea")[0];
-          item.$steps = common.gradioApp().querySelector("#" + item.steps);
-        });
-        this.$nextTick(() => {
+          // Ensure colors are applied after a short delay for any late-loading components
+          setTimeout(() => {
+            this.applySyntaxHighlightingColors();
+          }, 1000);
+
           this.prompts.forEach((item) => {
-            const $prompt = common.gradioApp().querySelector("#" + item.id);
-            console.log($prompt);
-            item.$prompt.parentElement.parentElement.after($prompt);
-            item.$prompt.parentElement.parentElement.style.display =
-              item.hideDefaultInput ? "none" : "flex";
-            // item.$textarea.parentNode.appendChild($prompt)
+            if (data[item.hideDefaultInputKey] !== null) {
+              item.hideDefaultInput = data[item.hideDefaultInputKey];
+            }
+            if (data[item.autoLoadWebuiPromptKey] !== null) {
+              item.autoLoadWebuiPrompt = data[item.autoLoadWebuiPromptKey];
+            }
+            if (data[item.hidePanelKey] !== null) {
+              item.hidePanel = data[item.hidePanelKey];
+            }
+            if (data[item.hideGroupTagsKey] !== null) {
+              item.hideGroupTags = data[item.hideGroupTagsKey];
+            }
+            item.$prompt = common.gradioApp().querySelector("#" + item.prompt);
+            item.$textarea = item.$prompt.getElementsByTagName("textarea")[0];
+            item.$steps = common.gradioApp().querySelector("#" + item.steps);
+          });
+          this.$nextTick(() => {
+            this.prompts.forEach((item) => {
+              const $prompt = common.gradioApp().querySelector("#" + item.id);
+              console.log($prompt);
+              item.$prompt.parentElement.parentElement.after($prompt);
+              item.$prompt.parentElement.parentElement.style.display =
+                item.hideDefaultInput ? "none" : "flex";
+              // item.$textarea.parentNode.appendChild($prompt)
+            });
+
+            this.startWatchSave = true;
           });
 
-          this.startWatchSave = true;
-        });
+          this.handlePaste();
 
-        this.handlePaste();
+          waitTick.addWaitTick(() => this.loadGroupTags());
 
-        waitTick.addWaitTick(() => this.loadGroupTags());
-
-        /*this.gradioAPI.getVersion().then(res => {
+          /*this.gradioAPI.getVersion().then(res => {
                     this.version = res.version
                     this.latestVersion = res.latest_version
                     this.isLatestVersion = res.version === res.latest_version
                 })*/
 
-        // todo: test
-        // this.$refs.about.open()
-        // this.$refs.chatgptPrompt.open()
-        // this.$refs.promptFormat.open()
-        // this.$refs.blacklist.open()
-        // this.$refs.hotkey.open()
-        // this.$refs.translateSetting.open(this.translateApi)
-        /*this.$refs.extraNetworksPopup.show({
+          // todo: test
+          // this.$refs.about.open()
+          // this.$refs.chatgptPrompt.open()
+          // this.$refs.promptFormat.open()
+          // this.$refs.blacklist.open()
+          // this.$refs.hotkey.open()
+          // this.$refs.translateSetting.open(this.translateApi)
+          /*this.$refs.extraNetworksPopup.show({
                     getBoundingClientRect: () => {
                         return {
                             top: 0,
@@ -1147,11 +1169,18 @@ export default {
                     },
                     offsetHeight: 26,
                 }, 'FGOTiamatv2')*/
-        /*this.onShowFavorite('phystonPrompt_txt2img_prompt', {
+          /*this.onShowFavorite('phystonPrompt_txt2img_prompt', {
                     clientY: 150,
                     clientX: 283,
                 })*/
-      });
+        })
+        .catch((err) => {
+          console.error("Failed to load settings:", err);
+          // Continue with default values if settings loading fails
+          this.startWatchSave = true;
+          this.handlePaste();
+          waitTick.addWaitTick(() => this.loadGroupTags());
+        });
     },
     loadGroupTags() {
       return this.gradioAPI.getGroupTags(this.languageCode).then((data) => {

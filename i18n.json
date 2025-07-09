@@ -194,6 +194,7 @@
         "is_remove_lora_after_comma": "是否去除Lora后面的逗号。<br/>勾选后Lora输出为“aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd”。<br/>取消勾选Lora输出为“aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd”。",
         "is_use_novel_ai_weight_symbol": "是否使用NovelAI的权重符号。<br/>勾选后权重符号 () 将变为 {}",
         "is_remove_before_line_comma": "是否去除换行前面的逗号。<br/>勾选后输出为“aaa, bbb<br/>ccc”。<br/>取消勾选输出为“aaa, bbb,<br/>ccc”。",
+        "is_normalize_category_format": "是否标准化分类声明格式。<br/>勾选后分类声明将格式化为\"{category: term1, term2, term3}\"，冒号后有一个空格，逗号后有一个空格，末尾无逗号。<br/>取消勾选将保持原始格式。",
         "auto_load_webui_prompt": "自动加载WebUI提示词变动。<br/>勾选后，当WebUI中提示词输入框的内容变动时，插件会自动加载关键词解析并格式化。<br/>未勾选，当WebUI中提示词输入框的内容变动时，需要手动点击加载提示词按钮。",
         "load_webui_prompt": "加载WebUI提示词"
       }
@@ -379,6 +380,7 @@
         "is_remove_lora_after_comma": "是否去除Lora後面的逗號。<br/>勾選後Lora輸出為「aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd」。<br/>取消勾選Lora輸出為「aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd」。",
         "is_use_novel_ai_weight_symbol": "是否使用NovelAI的權重符號。<br/>勾選後權重符號 () 將變為 {}",
         "is_remove_before_line_comma": "是否去除換行前面的逗號。<br/>勾選後輸出為「aaa, bbb<br/>ccc」。<br/>取消勾選輸出為「aaa, bbb,<br/>ccc」。",
+        "is_normalize_category_format": "是否標準化分類聲明格式。<br/>勾選後分類聲明將格式化為「{category: term1, term2, term3}」，冒號後有一個空格，逗號後有一個空格，末尾無逗號。<br/>取消勾選將保持原始格式。",
         "auto_load_webui_prompt": "自動加載WebUI提示詞變動。<br/>勾選後，當WebUI中提示詞輸入框的內容變動時，插件會自動加載關鍵詞解析並格式化。<br/>未勾選，當WebUI中提示詞輸入框的內容變動時，需要手動點擊加載提示詞按鈕。",
         "load_webui_prompt": "加載WebUI提示詞"
       }
@@ -564,6 +566,7 @@
         "is_remove_lora_after_comma": "是否移除Lora後面的逗號。<br/>勾選後Lora輸出為「aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd」。<br/>取消勾選Lora輸出為「aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd」。",
         "is_use_novel_ai_weight_symbol": "是否使用NovelAI的權重符號。<br/>勾選後權重符號 () 將變為 {}",
         "is_remove_before_line_comma": "是否移除換行前面的逗號。<br/>勾選後輸出為「aaa, bbb<br/>ccc」。<br/>取消勾選輸出為「aaa, bbb,<br/>ccc」。",
+        "is_normalize_category_format": "是否標準化分類聲明格式。<br/>勾選後分類聲明將格式化為「{category: term1, term2, term3}」，冒號後有一個空格，逗號後有一個空格，末尾無逗號。<br/>取消勾選將保持原始格式。",
         "auto_load_webui_prompt": "自動載入WebUI提示詞變動。<br/>勾選後，當WebUI中提示詞輸入框的內容變動時，插件會自動載入關鍵詞解析並格式化。<br/>未勾選，當WebUI中提示詞輸入框的內容變動時，需要手動點擊載入提示詞按鈕。",
         "load_webui_prompt": "載入WebUI提示詞"
       }
@@ -761,6 +764,7 @@
         "is_remove_lora_after_comma": "Remove the comma after Lora or not.<br/>If selected, the Lora output will be 'aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd'.<br/>If unselected, the Lora output will be 'aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd'.",
         "is_use_novel_ai_weight_symbol": "Whether to use NovelAI's weight symbol.<br/>Checking this will change the weight symbol () to {}",
         "is_remove_before_line_comma": "Whether to remove the comma before a line break.<br/>If checked, the output will be \"aaa, bbb<br/>ccc\".<br/>If unchecked, the output will be \"aaa, bbb,<br/>ccc\".",
+        "is_normalize_category_format": "Whether to normalize category declaration format.<br/>When checked, category declarations will be formatted as \"{category: term1, term2, term3}\" with one space after colon, one space after commas, and no trailing comma.<br/>When unchecked, original format will be preserved.",
         "auto_load_webui_prompt": "Auto-load WebUI prompt changes.<br/>When checked, the plugin will automatically load and format keyword parsing when the content of the prompt input box in WebUI changes.<br/>When unchecked, you need to manually click the load prompt button when the content of the prompt input box in WebUI changes.",
         "load_webui_prompt": "Load WebUI prompt"
       }
@@ -1241,6 +1245,7 @@
         "is_remove_lora_after_comma": "Supprimer la virgule après Lora ou non.<br/>Si sélectionné, la sortie Lora sera 'aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd'.<br/>Si non sélectionné, la sortie Lora sera 'aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd'.",
         "is_use_novel_ai_weight_symbol": "Utiliser le symbole de poids de NovelAI.<br/>En cochant cette option, le symbole de poids () sera remplacé par {}",
         "is_remove_before_line_comma": "Indique si vous souhaitez supprimer la virgule avant un saut de ligne.<br/>Si coché, la sortie sera \"aaa, bbb<br/>ccc\".<br/>Si décoché, la sortie sera \"aaa, bbb,<br/>ccc\".",
+        "is_normalize_category_format": "Normaliser le format de déclaration de catégorie.<br/>Lorsque coché, les déclarations de catégorie seront formatées comme \"{category: term1, term2, term3}\" avec un espace après les deux-points, un espace après les virgules, et sans virgule finale.<br/>Lorsque décoché, le format original sera préservé.",
         "auto_load_webui_prompt": "Chargement automatique des modifications de l'invite WebUI.<br/>Lorsqu'il est coché, le plugin chargera automatiquement et formatera l'analyse des mots clés lorsque le contenu de la zone de saisie de l'invite dans WebUI change.<br/>Lorsqu'il n'est pas coché, vous devez cliquer manuellement sur le bouton de chargement de l'invite lorsque le contenu de la zone de saisie de l'invite dans WebUI change.",
         "load_webui_prompt": "Charger l'invite WebUI"
       }
@@ -1440,6 +1445,7 @@
         "is_remove_lora_after_comma": "Komma nach Lora entfernen oder nicht.<br/>Wenn ausgewählt, wird die Lora-Ausgabe 'aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd' sein.<br/>Wenn nicht ausgewählt, wird die Lora-Ausgabe 'aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd' sein.",
         "is_use_novel_ai_weight_symbol": "Ob das Gewichtssymbol von NovelAI verwendet werden soll.<br/>Wenn diese Option aktiviert ist, wird das Gewichtssymbol () zu {} geändert",
         "is_remove_before_line_comma": "Gibt an, ob das Komma vor einem Zeilenumbruch entfernt werden soll.<br/>Wenn ausgewählt, wird die Ausgabe \"aaa, bbb<br/>ccc\" sein.<br/>Wenn nicht ausgewählt, wird die Ausgabe \"aaa, bbb,<br/>ccc\" sein.",
+        "is_normalize_category_format": "Kategorie-Deklarationsformat normalisieren.<br/>Wenn aktiviert, werden Kategorie-Deklarationen als \"{category: term1, term2, term3}\" formatiert mit einem Leerzeichen nach dem Doppelpunkt, einem Leerzeichen nach Kommas und ohne abschließendes Komma.<br/>Wenn deaktiviert, wird das ursprüngliche Format beibehalten.",
         "auto_load_webui_prompt": "Automatisches Laden von WebUI-Prompt-Änderungen.<br/>Wenn aktiviert, lädt das Plugin automatisch die Schlüsselwort-Analyse und -Formatierung, wenn sich der Inhalt des Eingabefelds für den Prompt in der WebUI ändert.<br/>Wenn deaktiviert, müssen Sie manuell auf die Schaltfläche zum Laden des Prompts klicken, wenn sich der Inhalt des Eingabefelds für den Prompt in der WebUI ändert.",
         "load_webui_prompt": "WebUI-Prompt laden"
       }
@@ -1873,6 +1879,7 @@
         "is_remove_lora_after_comma": "コンマの後にLoraを削除するかどうか。<br/>選択すると、Loraの出力は「aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd」となります。<br/>選択しない場合、Loraの出力は「aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd」となります。",
         "is_use_novel_ai_weight_symbol": "NovelAIの重み記号を使用するかどうか。<br/>このオプションを選択すると、重み記号 () が {} に変更されます",
         "is_remove_before_line_comma": "改行の前のカンマを削除するかどうか。<br/>チェックすると、出力は「aaa, bbb<br/>ccc」となります。<br/>チェックを外すと、出力は「aaa, bbb,<br/>ccc」となります。",
+        "is_normalize_category_format": "カテゴリ宣言フォーマットを正規化するかどうか。<br/>チェックすると、カテゴリ宣言は「{category: term1, term2, term3}」の形式でフォーマットされ、コロンの後に1つのスペース、カンマの後に1つのスペース、末尾にカンマなしとなります。<br/>チェックを外すと、元のフォーマットが保持されます。",
         "auto_load_webui_prompt": "WebUIプロンプトの変更を自動的にロードします。<br/>チェックすると、WebUIのプロンプト入力ボックスの内容が変更されたとき、プラグインはキーワードの解析とフォーマットを自動的にロードします。<br/>チェックしない場合、WebUIのプロンプト入力ボックスの内容が変更されたときに手動でプロンプトのロードボタンをクリックする必要があります。",
         "load_webui_prompt": "WebUIプロンプトのロード"
       }
@@ -2974,6 +2981,7 @@
         "is_remove_lora_after_comma": "Eliminar la coma después de Lora o no.<br/>Si se selecciona, la salida de Lora será 'aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd'.<br/>Si no se selecciona, la salida de Lora será 'aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd'.",
         "is_use_novel_ai_weight_symbol": "Si se debe usar el símbolo de peso de NovelAI.<br/>Al marcar esta opción, el símbolo de peso () se cambiará a {}",
         "is_remove_before_line_comma": "Si desea eliminar la coma antes de un salto de línea.<br/>Si está marcado, la salida será \"aaa, bbb<br/>ccc\".<br/>Si no está marcado, la salida será \"aaa, bbb,<br/>ccc\".",
+        "is_normalize_category_format": "Normalizar el formato de declaración de categoría.<br/>Cuando está marcado, las declaraciones de categoría se formatearán como \"{category: term1, term2, term3}\" con un espacio después de los dos puntos, un espacio después de las comas y sin coma final.<br/>Cuando no está marcado, se preservará el formato original.",
         "auto_load_webui_prompt": "Cargar automáticamente cambios en el aviso de WebUI.<br/>Cuando está marcado, el complemento cargará automáticamente y formateará el análisis de palabras clave cuando cambie el contenido del cuadro de entrada del aviso en WebUI.<br/>Cuando no está marcado, es necesario hacer clic manualmente en el botón de carga del aviso cuando cambie el contenido del cuadro de entrada del aviso en WebUI.",
         "load_webui_prompt": "Cargar aviso de WebUI"
       }
