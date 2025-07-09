@@ -225,6 +225,81 @@ export default {
       });
       return index - 1;
     },
+    // Helper function to highlight weight syntax with colons
+    _highlightWeightSyntax(value) {
+      // Check for weight syntax like (term:1.2), [term:0.8], {term:1.5}
+      const weightRegex = /^([\(\[\{])(.+):(\-?[0-9\.]+)([\)\]\}])$/;
+      const match = value.match(weightRegex);
+
+      if (match) {
+        const [, openBracket, term, weightStr, closeBracket] = match;
+        const weight = parseFloat(weightStr);
+
+        let weightClass = "character";
+        if (weight > 1.0) {
+          weightClass = "weight-value-boost";
+        } else if (weight < 1.0) {
+          weightClass = "weight-value-reduce";
+        }
+
+        // Check if the term is an embedding
+        const isEmbedding = this.embeddingExists(term.trim()) !== false;
+        const termClass = isEmbedding ? "embedding-tag" : "character";
+
+        return `<span class="weight-punctuation">${openBracket}</span><span class="${termClass}">${common.escapeHtml(
+          term
+        )}</span><span class="weight-punctuation">:</span><span class="${weightClass}">${weightStr}</span><span class="weight-punctuation">${closeBracket}</span>`;
+      }
+
+      return null;
+    },
+
+    // Helper function to highlight LoRA syntax
+    _highlightLoraSyntax(value) {
+      // Check for LoRA syntax like <lora:name:0.8> or <lyco:name:1.2>
+      // Only highlight if it has a strength value (colon syntax)
+      const loraRegex = /^<(lora|lyco):([^:>]+):([^>]+)>/;
+      const match = value.match(loraRegex);
+
+      if (match) {
+        const [, type, name, strengthStr] = match;
+        let result = `<span class="lora-punctuation">&lt;</span><span class="lora-punctuation">${type}</span><span class="lora-punctuation">:</span><span class="character">${common.escapeHtml(
+          name
+        )}</span>`;
+
+        // Parse the strength value (could be just a number or have additional metadata)
+        const strengthMatch = strengthStr.match(/^(\-?[0-9\.]+)/);
+        if (strengthMatch) {
+          const strength = parseFloat(strengthMatch[1]);
+          let strengthClass = "character";
+          if (strength > 1.0) {
+            strengthClass = "weight-value-boost";
+          } else if (strength < 1.0) {
+            strengthClass = "weight-value-reduce";
+          }
+
+          result += `<span class="lora-punctuation">:</span><span class="${strengthClass}">${strengthMatch[1]}</span>`;
+
+          // Add any remaining metadata after the strength value
+          const remaining = strengthStr.substring(strengthMatch[1].length);
+          if (remaining) {
+            result += `<span class="character">${common.escapeHtml(
+              remaining
+            )}</span>`;
+          }
+        } else {
+          result += `<span class="lora-punctuation">:</span><span class="character">${common.escapeHtml(
+            strengthStr
+          )}</span>`;
+        }
+
+        result += `<span class="lora-punctuation">&gt;</span>`;
+        return result;
+      }
+
+      return null;
+    },
+
     renderTag(id) {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return "";
@@ -236,47 +311,63 @@ export default {
         value =
           '<div class="break-character">---------------------</div> <div class="character">BREAK</div> <div class="break-character">---------------------</div>';
       } else {
-        value = common.escapeHtml(value);
-        if (tag.incWeight > 0) {
-          if (this.useNovelAiWeightSymbol) {
-            value = common.setLayers(value, 0, "{", "}");
-            value = '<div class="character">' + value + "</div>";
-            let start =
-              '<div class="weight-character">' +
-              "{".repeat(tag.incWeight) +
-              "</div>";
-            let end =
-              '<div class="weight-character">' +
-              "}".repeat(tag.incWeight) +
-              "</div>";
-            value = start + value + end;
-          } else {
-            value = common.setLayers(value, 0, "(", ")");
-            value = '<div class="character">' + value + "</div>";
-            let start =
-              '<div class="weight-character">' +
-              "(".repeat(tag.incWeight) +
-              "</div>";
-            let end =
-              '<div class="weight-character">' +
-              ")".repeat(tag.incWeight) +
-              "</div>";
-            value = start + value + end;
-          }
-        } else if (tag.decWeight > 0) {
-          value = common.setLayers(value, 0, "[", "]");
-          value = '<div class="character">' + value + "</div>";
-          let start =
-            '<div class="weight-character">' +
-            "[".repeat(tag.decWeight) +
-            "</div>";
-          let end =
-            '<div class="weight-character">' +
-            "]".repeat(tag.decWeight) +
-            "</div>";
-          value = start + value + end;
+        // First try to highlight LoRA syntax
+        const loraHighlight = this._highlightLoraSyntax(value);
+        if (loraHighlight) {
+          value = '<div class="character">' + loraHighlight + "</div>";
         } else {
-          value = '<div class="character">' + value + "</div>";
+          // Then try to highlight weight syntax with colons
+          const weightHighlight = this._highlightWeightSyntax(value);
+          if (weightHighlight) {
+            value = '<div class="character">' + weightHighlight + "</div>";
+          } else {
+            // Fall back to existing bracket-based weight handling
+            // But only if there's no colon syntax present
+            const hasColonSyntax = common.weightNumRegex.test(value);
+
+            value = common.escapeHtml(value);
+            if (!hasColonSyntax && tag.incWeight > 0) {
+              if (this.useNovelAiWeightSymbol) {
+                value = common.setLayers(value, 0, "{", "}");
+                value = '<div class="character">' + value + "</div>";
+                let start =
+                  '<div class="weight-character">' +
+                  "{".repeat(tag.incWeight) +
+                  "</div>";
+                let end =
+                  '<div class="weight-character">' +
+                  "}".repeat(tag.incWeight) +
+                  "</div>";
+                value = start + value + end;
+              } else {
+                value = common.setLayers(value, 0, "(", ")");
+                value = '<div class="character">' + value + "</div>";
+                let start =
+                  '<div class="weight-character">' +
+                  "(".repeat(tag.incWeight) +
+                  "</div>";
+                let end =
+                  '<div class="weight-character">' +
+                  ")".repeat(tag.incWeight) +
+                  "</div>";
+                value = start + value + end;
+              }
+            } else if (!hasColonSyntax && tag.decWeight > 0) {
+              value = common.setLayers(value, 0, "[", "]");
+              value = '<div class="character">' + value + "</div>";
+              let start =
+                '<div class="weight-character">' +
+                "[".repeat(tag.decWeight) +
+                "</div>";
+              let end =
+                '<div class="weight-character">' +
+                "]".repeat(tag.decWeight) +
+                "</div>";
+              value = start + value + end;
+            } else {
+              value = '<div class="character">' + value + "</div>";
+            }
+          }
         }
       }
       return value;

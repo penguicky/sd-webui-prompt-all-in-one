@@ -320,77 +320,117 @@ export default {
       const tokens = [];
       let currentPos = 0;
 
-      // First, find all LoRA/LyCORIS patterns
-      const loraRegex = /<(lora|lyco):\s*([^:>]+)\s*(?::\s*[^>]+)?>/gi;
-      const loraMatches = [];
-      let match;
-
-      while ((match = loraRegex.exec(text)) !== null) {
-        loraMatches.push({
-          start: match.index,
-          end: match.index + match[0].length,
-          text: match[0],
-          type: match[1], // 'lora' or 'lyco'
-          name: match[2] ? match[2].trim() : "",
-          fullMatch: match[0],
-        });
-      }
-
-      // Process text character by character, handling LoRA patterns
+      // Process text character by character, handling enhanced syntax patterns
       while (currentPos < text.length) {
-        // Check if we're at the start of a LoRA pattern
-        const loraMatch = loraMatches.find((m) => m.start === currentPos);
+        // Try to parse enhanced weight syntax first (e.g., (term:1.2))
+        const weightSyntax = this.parseWeightSyntax(text, currentPos);
+        if (weightSyntax) {
+          tokens.push(...weightSyntax.tokens);
+          currentPos += weightSyntax.length;
+          continue;
+        }
 
-        if (loraMatch) {
-          // Add LoRA token
+        // Try to parse enhanced LoRA syntax with strength values (e.g., <lora:name:0.8>)
+        const enhancedLoraSyntax = this.parseEnhancedLoraSyntax(
+          text,
+          currentPos
+        );
+        if (enhancedLoraSyntax) {
+          tokens.push(...enhancedLoraSyntax.tokens);
+          currentPos += enhancedLoraSyntax.length;
+          continue;
+        }
+
+        // Try to parse embedding syntax (e.g., <embedding:name>)
+        const embeddingSyntax = this.parseEmbeddingSyntax(text, currentPos);
+        if (embeddingSyntax) {
+          tokens.push(...embeddingSyntax.tokens);
+          currentPos += embeddingSyntax.length;
+          continue;
+        }
+
+        // Try to parse basic LoRA syntax without strength values (e.g., <lora:name>)
+        const basicLoraRegex = /^<(lora|lyco):([^:>]+)>/;
+        const remainingText = text.slice(currentPos);
+        const basicLoraMatch = remainingText.match(basicLoraRegex);
+
+        if (basicLoraMatch) {
+          const [fullMatch, type, name] = basicLoraMatch;
           const exists =
-            loraMatch.type === "lora"
-              ? this.loraExists(loraMatch.name) !== false
-              : this.lycoExists(loraMatch.name) !== false;
+            type === "lora"
+              ? this.loraExists(name.trim()) !== false
+              : this.lycoExists(name.trim()) !== false;
 
-          const className = loraMatch.name
-            ? exists
-              ? "highlight-lora"
-              : "highlight-lora-missing"
-            : "highlight-lora-invalid";
+          const className = exists
+            ? "highlight-lora"
+            : "highlight-lora-missing";
 
           tokens.push({
             type: "lora",
-            text: loraMatch.text,
+            text: fullMatch,
             className: className,
           });
 
-          currentPos = loraMatch.end;
-        } else {
-          // Find the next word or special character
-          const remainingText = text.slice(currentPos);
-          const wordMatch = remainingText.match(/^([a-zA-Z_][a-zA-Z0-9_-]*)/);
+          currentPos += fullMatch.length;
+          continue;
+        }
 
-          if (wordMatch) {
-            // It's a word - check if it's an embedding
-            const word = wordMatch[1];
-            const isEmbedding = this.embeddingExists(word) !== false;
+        // Check for regular words (potential embeddings or regular terms)
+        const wordMatch = remainingText.match(/^([a-zA-Z_][a-zA-Z0-9_-]*)/);
+        if (wordMatch) {
+          const word = wordMatch[1];
+          const isEmbedding = this.embeddingExists(word) !== false;
 
-            tokens.push({
-              type: isEmbedding ? "embedding" : "regular",
-              text: word,
-              className: isEmbedding
-                ? "highlight-embedding"
-                : "highlight-regular",
-            });
+          tokens.push({
+            type: isEmbedding ? "embedding" : "regular",
+            text: word,
+            className: isEmbedding
+              ? "highlight-embedding"
+              : "highlight-regular",
+          });
 
-            currentPos += word.length;
-          } else {
-            // It's a non-word character (space, punctuation, etc.)
+          currentPos += word.length;
+          continue;
+        }
+
+        // Handle bracket-based weight syntax (existing functionality)
+        // Check for opening brackets that might indicate weight syntax
+        const char = text[currentPos];
+        if (char === "(" || char === "[" || char === "{") {
+          // Look ahead to see if this is a simple bracket weight (not colon syntax)
+          const bracketRegex =
+            char === "("
+              ? /^\(([^:)]+)\)/
+              : char === "["
+              ? /^\[([^\]:]+)\]/
+              : /^\{([^:}]+)\}/;
+          const bracketMatch = remainingText.match(bracketRegex);
+
+          if (bracketMatch) {
+            // This is a simple bracket weight, highlight as regular
             tokens.push({
               type: "text",
-              text: text[currentPos],
+              text: char,
+              className: "highlight-weight-punctuation",
+            });
+          } else {
+            // Just a regular punctuation character
+            tokens.push({
+              type: "text",
+              text: char,
               className: null,
             });
-
-            currentPos++;
           }
+        } else {
+          // It's a non-word character (space, punctuation, etc.)
+          tokens.push({
+            type: "text",
+            text: char,
+            className: null,
+          });
         }
+
+        currentPos++;
       }
 
       // Convert tokens to HTML with proper escaping
@@ -410,6 +450,209 @@ export default {
       const div = document.createElement("div");
       div.textContent = text;
       return div.innerHTML;
+    },
+
+    // Helper function to parse and highlight weight syntax with colons
+    parseWeightSyntax(text, startPos) {
+      // Check for weight syntax like (term:1.2), [term:0.8], {term:1.5}
+      const weightRegex = /^([\(\[\{])(.+?):(\-?[0-9\.]+)([\)\]\}])/;
+      const remainingText = text.slice(startPos);
+      const match = remainingText.match(weightRegex);
+
+      if (match) {
+        const [fullMatch, openBracket, term, weightStr, closeBracket] = match;
+        const weight = parseFloat(weightStr);
+
+        let weightClass = "highlight-regular";
+        if (weight > 1.0) {
+          weightClass = "highlight-weight-value-boost";
+        } else if (weight < 1.0) {
+          weightClass = "highlight-weight-value-reduce";
+        }
+
+        // Check if the term is an embedding
+        const isEmbedding = this.embeddingExists(term.trim()) !== false;
+        const termClass = isEmbedding
+          ? "highlight-embedding"
+          : "highlight-regular";
+
+        return {
+          tokens: [
+            {
+              type: "weight-punctuation",
+              text: openBracket,
+              className: "highlight-weight-punctuation",
+            },
+            { type: "weight-term", text: term, className: termClass },
+            {
+              type: "weight-punctuation",
+              text: ":",
+              className: "highlight-weight-punctuation",
+            },
+            { type: "weight-value", text: weightStr, className: weightClass },
+            {
+              type: "weight-punctuation",
+              text: closeBracket,
+              className: "highlight-weight-punctuation",
+            },
+          ],
+          length: fullMatch.length,
+        };
+      }
+
+      return null;
+    },
+
+    // Helper function to parse and highlight enhanced LoRA syntax
+    parseEnhancedLoraSyntax(text, startPos) {
+      // Check for LoRA syntax like <lora:name:0.8> or <lyco:name:1.2>
+      const loraRegex = /^<(lora|lyco):([^:>]+):([^>]+)>/;
+      const remainingText = text.slice(startPos);
+      const match = remainingText.match(loraRegex);
+
+      if (match) {
+        const [fullMatch, type, name, strengthStr] = match;
+
+        // Parse the strength value (could be just a number or have additional metadata)
+        const strengthMatch = strengthStr.match(/^(\-?[0-9\.]+)/);
+
+        const tokens = [
+          {
+            type: "lora-punctuation",
+            text: "<",
+            className: "highlight-lora-punctuation",
+          },
+          {
+            type: "lora-type",
+            text: type,
+            className: "highlight-lora-punctuation",
+          },
+          {
+            type: "lora-punctuation",
+            text: ":",
+            className: "highlight-lora-punctuation",
+          },
+        ];
+
+        // Check if LoRA exists
+        const exists =
+          type === "lora"
+            ? this.loraExists(name.trim()) !== false
+            : this.lycoExists(name.trim()) !== false;
+
+        const loraClassName = exists
+          ? "highlight-lora"
+          : "highlight-lora-missing";
+        tokens.push({
+          type: "lora-name",
+          text: name,
+          className: loraClassName,
+        });
+
+        if (strengthMatch) {
+          const strength = parseFloat(strengthMatch[1]);
+          let strengthClass = "highlight-regular";
+          if (strength > 1.0) {
+            strengthClass = "highlight-weight-value-boost";
+          } else if (strength < 1.0) {
+            strengthClass = "highlight-weight-value-reduce";
+          }
+
+          tokens.push({
+            type: "lora-punctuation",
+            text: ":",
+            className: "highlight-lora-punctuation",
+          });
+          tokens.push({
+            type: "lora-strength",
+            text: strengthMatch[1],
+            className: strengthClass,
+          });
+
+          // Add any remaining metadata after the strength value
+          const remaining = strengthStr.substring(strengthMatch[1].length);
+          if (remaining) {
+            tokens.push({
+              type: "lora-metadata",
+              text: remaining,
+              className: "highlight-regular",
+            });
+          }
+        } else {
+          tokens.push({
+            type: "lora-punctuation",
+            text: ":",
+            className: "highlight-lora-punctuation",
+          });
+          tokens.push({
+            type: "lora-strength",
+            text: strengthStr,
+            className: "highlight-regular",
+          });
+        }
+
+        tokens.push({
+          type: "lora-punctuation",
+          text: ">",
+          className: "highlight-lora-punctuation",
+        });
+
+        return {
+          tokens: tokens,
+          length: fullMatch.length,
+        };
+      }
+
+      return null;
+    },
+
+    // Helper function to parse embedding syntax
+    parseEmbeddingSyntax(text, startPos) {
+      // Check for embedding syntax like <embedding:name>
+      const embeddingRegex = /^<(embedding):([^>]+)>/;
+      const remainingText = text.slice(startPos);
+      const match = remainingText.match(embeddingRegex);
+
+      if (match) {
+        const [fullMatch, type, name] = match;
+        const exists = this.embeddingExists(name.trim()) !== false;
+        const embeddingClassName = exists
+          ? "highlight-embedding"
+          : "highlight-lora-missing";
+
+        return {
+          tokens: [
+            {
+              type: "embedding-punctuation",
+              text: "<",
+              className: "highlight-lora-punctuation",
+            },
+            {
+              type: "embedding-type",
+              text: type,
+              className: "highlight-lora-punctuation",
+            },
+            {
+              type: "embedding-punctuation",
+              text: ":",
+              className: "highlight-lora-punctuation",
+            },
+            {
+              type: "embedding-name",
+              text: name,
+              className: embeddingClassName,
+            },
+            {
+              type: "embedding-punctuation",
+              text: ">",
+              className: "highlight-lora-punctuation",
+            },
+          ],
+          length: fullMatch.length,
+        };
+      }
+
+      return null;
     },
 
     cleanup() {
@@ -515,6 +758,29 @@ export default {
 
 :deep(.highlight-regular) {
   color: #00cc66 !important;
+  background: transparent !important;
+}
+
+/* Enhanced weight and LoRA syntax highlighting */
+:deep(.highlight-weight-punctuation) {
+  color: #9966cc !important;
+  background: transparent !important;
+}
+
+:deep(.highlight-weight-value-boost) {
+  color: #00cc66 !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+}
+
+:deep(.highlight-weight-value-reduce) {
+  color: #cc0066 !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+}
+
+:deep(.highlight-lora-punctuation) {
+  color: #9966cc !important;
   background: transparent !important;
 }
 </style>
