@@ -311,6 +311,35 @@ export default {
       }
     },
 
+    forceRefresh() {
+      // Force a SAFE refresh for color updates (preserve content)
+      if (!this.targetTextarea || !this.isActive) return;
+
+      // Debug logging (can be removed in production)
+      if (process.env.NODE_ENV === "development") {
+        console.log("Force refreshing textarea highlighting...");
+      }
+
+      const text = this.targetTextarea.value;
+
+      // SAFE APPROACH: Re-parse content with new colors without clearing
+      const newHighlightedContent = this.parseAndHighlightText(text);
+      this.highlightedContent = newHighlightedContent;
+
+      // Single force update is sufficient
+      this.$forceUpdate();
+
+      // Sync scroll position
+      this.$nextTick(() => {
+        this.onTextareaScroll();
+
+        // Gentle style recalculation
+        if (this.$refs.highlightLayer) {
+          this.$refs.highlightLayer.offsetHeight; // Single reflow
+        }
+      });
+    },
+
     parseAndHighlightText(text) {
       if (!text) return "";
 
@@ -998,13 +1027,13 @@ export default {
 
 /* Syntax highlighting colors - visible text colors */
 :deep(.highlight-lora) {
-  color: #ff6600 !important;
+  color: var(--syntax-highlight-lora-names, #ff6600) !important;
   font-weight: 500 !important;
   background: transparent !important;
 }
 
 :deep(.highlight-lora-missing) {
-  color: #ff6600 !important;
+  color: var(--syntax-highlight-lora-names, #ff6600) !important;
   text-decoration: underline wavy #ff0000 !important;
   font-weight: 500 !important;
   background: transparent !important;
@@ -1017,41 +1046,41 @@ export default {
 }
 
 :deep(.highlight-embedding) {
-  color: #0066cc !important;
+  color: var(--syntax-highlight-embeddings, #0066cc) !important;
   font-weight: 500 !important;
   background: transparent !important;
 }
 
 :deep(.highlight-regular) {
-  color: #00cc66 !important;
+  color: var(--syntax-highlight-regular-terms, #00cc66) !important;
   background: transparent !important;
 }
 
 /* Enhanced weight and LoRA syntax highlighting */
 :deep(.highlight-weight-punctuation) {
-  color: #9966cc !important;
+  color: var(--syntax-highlight-punctuation, #9966cc) !important;
   background: transparent !important;
 }
 
 :deep(.highlight-weight-value-boost) {
-  color: #00cc66 !important;
+  color: var(--syntax-highlight-weight-boost, #00cc66) !important;
   font-weight: 500 !important;
   background: transparent !important;
 }
 
 :deep(.highlight-weight-value-reduce) {
-  color: #cc0066 !important;
+  color: var(--syntax-highlight-weight-reduce, #cc0066) !important;
   font-weight: 500 !important;
   background: transparent !important;
 }
 
 :deep(.highlight-lora-punctuation) {
-  color: #9966cc !important;
+  color: var(--syntax-highlight-punctuation, #9966cc) !important;
   background: transparent !important;
 }
 
 :deep(.highlight-category-name) {
-  color: #ff69b4 !important;
+  color: var(--syntax-highlight-category-names, #ff69b4) !important;
   font-weight: 500 !important;
   background: transparent !important;
 }

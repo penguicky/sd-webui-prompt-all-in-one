@@ -74,6 +74,16 @@
                   </div>
                   <div
                     class="extend-btn-item"
+                    v-tooltip="
+                      getLang('syntax_highlighting_settings') ||
+                      'Syntax Highlighting Settings'
+                    "
+                    @click="$emit('click:syntaxHighlightingSettings', $event)"
+                  >
+                    <icon-svg class="hover-scale-120" name="format" />
+                  </div>
+                  <div
+                    class="extend-btn-item"
                     v-tooltip="getLang('theme_extension')"
                     @click="$emit('click:selectTheme', $event)"
                   >
@@ -555,7 +565,7 @@
           <!--<TransitionGroup name="fadeLeft">-->
           <div
             v-for="(tag, index) in tags"
-            :key="tag.id"
+            :key="tag.id + '-' + colorRefreshKey"
             :class="[
               'prompt-tag',
               tag.disabled ? 'disabled' : '',
@@ -1348,6 +1358,7 @@ export default {
     "click:promptFormat",
     "click:blacklist",
     "click:hotkey",
+    "click:syntaxHighlightingSettings",
     "click:selectTheme",
     "click:switchTheme",
     "click:showAbout",
@@ -1377,6 +1388,7 @@ export default {
       loading: {},
       editing: {},
       isEditing: false,
+      colorRefreshKey: 0, // Key to force re-rendering when colors change
     };
   },
   computed: {
@@ -1390,24 +1402,45 @@ export default {
   watch: {
     loras: {
       handler() {
+        console.log(
+          "🎨 TAGS: LoRA list updated, refreshing tag classes and colors..."
+        );
         this.tags.forEach((tag) => {
           this._setTagClass(tag);
+        });
+        // Ensure custom colors are applied after class updates
+        this.$nextTick(() => {
+          this._applyCustomColorsToTags();
         });
       },
       immediate: false,
     },
     lycos: {
       handler() {
+        console.log(
+          "🎨 TAGS: LyCORIS list updated, refreshing tag classes and colors..."
+        );
         this.tags.forEach((tag) => {
           this._setTagClass(tag);
+        });
+        // Ensure custom colors are applied after class updates
+        this.$nextTick(() => {
+          this._applyCustomColorsToTags();
         });
       },
       immediate: false,
     },
     embeddings: {
       handler() {
+        console.log(
+          "🎨 TAGS: Embeddings list updated, refreshing tag classes and colors..."
+        );
         this.tags.forEach((tag) => {
           this._setTagClass(tag);
+        });
+        // Ensure custom colors are applied after class updates
+        this.$nextTick(() => {
+          this._applyCustomColorsToTags();
         });
       },
       immediate: false,
@@ -2291,6 +2324,160 @@ export default {
             resolve();
           }
         }
+      });
+    },
+
+    refreshTags() {
+      // Force re-render of all tags to apply new colors (SAFE VERSION)
+      // PRODUCTION-SAFE DEBUG: Always log tag refresh
+      console.log(
+        "🎨 TAGS: Refreshing",
+        this.tags.length,
+        "tags for color changes..."
+      );
+
+      // ENHANCED APPROACH: Force comprehensive tag style updates
+      if (process.env.NODE_ENV === "development") {
+        console.log("Processing", this.tags.length, "tags for color refresh");
+      }
+
+      this.tags.forEach((tag, index) => {
+        // Re-apply tag classes with new colors
+        this._setTagClass(tag);
+
+        // Re-process tag content for syntax highlighting if needed
+        if (tag.value && this._setTag) {
+          this._setTag(tag);
+        }
+
+        // Force renderTag to be called again by updating a reactive property
+        // This ensures the HTML content is regenerated with new colors
+        tag.renderKey = Date.now() + Math.random();
+
+        // Force Vue reactivity by updating tag properties
+        tag.colorUpdateKey = Date.now();
+
+        // Debug: Log tag class updates
+        if (process.env.NODE_ENV === "development" && index < 3) {
+          console.log(`Tag ${index}:`, tag.classes, tag.value);
+        }
+      });
+
+      // Force Vue to re-render the component
+      this.$forceUpdate();
+
+      // Force complete re-render by updating the refresh key
+      this.colorRefreshKey = Date.now();
+
+      // Apply custom colors to all tags
+      this._applyCustomColorsToTags();
+    },
+
+    _applyCustomColorsToTags() {
+      // Apply custom colors directly to tag elements
+      this.$nextTick(() => {
+        const tagElements = this.$el.querySelectorAll(".prompt-tag-value");
+        console.log(
+          "🎨 TAGS: Applying custom colors to",
+          tagElements.length,
+          "tag elements"
+        );
+
+        // Get current custom colors from parent (App.vue)
+        const customColors = this.$parent.syntaxHighlightingColors || {
+          embeddings: "#0066cc",
+          loraNames: "#ff6600",
+          regularTerms: "#00cc66",
+          weightValueBoost: "#00cc66",
+          weightValueReduce: "#ff6666",
+          punctuation: "#9966cc",
+          categoryNames: "#ff69b4",
+        };
+
+        tagElements.forEach((el, index) => {
+          // Apply colors directly to elements based on their classes
+          if (el.classList.contains("embedding-tag")) {
+            el.style.setProperty("color", customColors.embeddings, "important");
+            console.log(
+              "🎨 TAGS: Applied embedding color:",
+              customColors.embeddings
+            );
+          } else if (
+            el.classList.contains("lora-tag") ||
+            el.classList.contains("lyco-tag")
+          ) {
+            el.style.setProperty("color", customColors.loraNames, "important");
+            console.log("🎨 TAGS: Applied LoRA color:", customColors.loraNames);
+          } else if (el.classList.contains("regular-tag")) {
+            el.style.setProperty(
+              "color",
+              customColors.regularTerms,
+              "important"
+            );
+            console.log(
+              "🎨 TAGS: Applied regular color:",
+              customColors.regularTerms
+            );
+          }
+
+          // Also apply colors to nested syntax highlighting elements
+          const weightPunctuation = el.querySelectorAll(".weight-punctuation");
+          weightPunctuation.forEach((span) => {
+            span.style.setProperty(
+              "color",
+              customColors.punctuation,
+              "important"
+            );
+          });
+
+          const weightBoost = el.querySelectorAll(".weight-value-boost");
+          weightBoost.forEach((span) => {
+            span.style.setProperty(
+              "color",
+              customColors.weightValueBoost,
+              "important"
+            );
+          });
+
+          const weightReduce = el.querySelectorAll(".weight-value-reduce");
+          weightReduce.forEach((span) => {
+            span.style.setProperty(
+              "color",
+              customColors.weightValueReduce,
+              "important"
+            );
+          });
+
+          const categoryNames = el.querySelectorAll(".category-name");
+          categoryNames.forEach((span) => {
+            span.style.setProperty(
+              "color",
+              customColors.categoryNames,
+              "important"
+            );
+          });
+
+          const embeddingContent = el.querySelectorAll(".embedding-content");
+          embeddingContent.forEach((span) => {
+            span.style.setProperty(
+              "color",
+              customColors.embeddings,
+              "important"
+            );
+          });
+
+          const loraContent = el.querySelectorAll(".lora-content");
+          loraContent.forEach((span) => {
+            span.style.setProperty(
+              "color",
+              customColors.loraNames,
+              "important"
+            );
+          });
+
+          // Force style recalculation
+          el.offsetHeight;
+        });
       });
     },
   },

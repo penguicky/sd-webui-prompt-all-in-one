@@ -55,6 +55,10 @@ export default {
       this._setTagClass(tag);
       this.$nextTick(() => {
         this._setTagHeight(tag);
+        // Apply custom colors to newly created/updated tags
+        if (this._applyCustomColorsToTags) {
+          this._applyCustomColorsToTags();
+        }
       });
     },
     _setTagHeight(tag) {

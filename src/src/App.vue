@@ -47,6 +47,7 @@
         @click:prompt-format="onPromptFormatClick"
         @click:blacklist="onBlacklistClick"
         @click:hotkey="onHotkeyClick"
+        @click:syntax-highlighting-settings="onSyntaxHighlightingSettingsClick"
         v-model:tag-complete-file="tagCompleteFile"
         v-model:only-csv-on-auto="onlyCsvOnAuto"
         v-model:group-tags-translate="groupTagsTranslate"
@@ -225,6 +226,16 @@
       :loras="loras"
       :lycos="lycos"
     />
+
+    <!-- Syntax Highlighting Settings Panel -->
+    <syntax-highlighting-settings
+      ref="syntaxHighlightingSettings"
+      :colors="syntaxHighlightingColors"
+      :language-code="languageCode"
+      :languages="languages"
+      @update:colors="onUpdateSyntaxHighlightingColors"
+      @close="onSyntaxHighlightingSettingsClose"
+    />
   </div>
 </template>
 
@@ -248,6 +259,7 @@ import { ref } from "vue";
 import Hotkey from "@/components/hotkey.vue";
 import ExtraNetworksPopup from "@/components/extraNetworksPopup.vue";
 import NativeHighlightManager from "@/components/nativeHighlightManager.vue";
+import SyntaxHighlightingSettings from "@/components/syntaxHighlightingSettings.vue";
 import waitTick from "@/utils/waitTick";
 
 export default {
@@ -268,6 +280,7 @@ export default {
     PhystonPrompt,
     ExtraNetworksPopup,
     NativeHighlightManager,
+    SyntaxHighlightingSettings,
   },
   mixins: [],
   data() {
@@ -436,6 +449,18 @@ export default {
         dblClick: "disable", // edit, disable, extend
         rightClick: "", // edit, disable, extend
         hover: "extend", // extend
+      },
+
+      // Syntax highlighting color settings
+      syntaxHighlightingColors: {
+        embeddings: "#0066cc",
+        loraNames: "#ff6600",
+        regularTerms: "#00cc66",
+        weightValueBoost: "#00cc66", // > 1.0
+        weightValueReduce: "#cc0066", // < 1.0
+        weightValueNormal: "#00cc66", // = 1.0 (uses regular color)
+        punctuation: "#9966cc", // For weights, LoRA syntax, and categories
+        categoryNames: "#ff69b4",
       },
     };
   },
@@ -730,6 +755,22 @@ export default {
       },
       immediate: false,
     },
+    syntaxHighlightingColors: {
+      handler: function (val, oldVal) {
+        if (!this.startWatchSave) return;
+        // Debug logging (can be removed in production)
+        if (process.env.NODE_ENV === "development") {
+          console.log("onSyntaxHighlightingColorsChange", val);
+        }
+        // Only save to storage, don't apply colors here (to avoid conflicts)
+        this.gradioAPI
+          .setData("syntaxHighlightingColors", val)
+          .then((data) => {})
+          .catch((err) => {});
+      },
+      deep: true,
+      immediate: false,
+    },
   },
   mounted() {
     common.loadCSS(
@@ -854,6 +895,7 @@ export default {
         "hotkey",
         "extraNetworksWidth",
         "extraNetworksHeight",
+        "syntaxHighlightingColors",
       ];
       this.prompts.forEach((item) => {
         dataListsKeys.push(item.hideDefaultInputKey);
@@ -1023,8 +1065,27 @@ export default {
           this.extraNetworksHeight = data.extraNetworksHeight;
         }
 
+        // Load syntax highlighting colors from storage
+        if (data.syntaxHighlightingColors !== null) {
+          this.syntaxHighlightingColors = { ...data.syntaxHighlightingColors };
+          if (process.env.NODE_ENV === "development") {
+            console.log(
+              "Loaded syntax highlighting colors from storage:",
+              this.syntaxHighlightingColors
+            );
+          }
+        }
+
         this.updateTranslateApiConfig();
         this.$refs.extensionCss.init();
+
+        // Apply syntax highlighting colors on startup
+        this.applySyntaxHighlightingColors();
+
+        // Ensure colors are applied after a short delay for any late-loading components
+        setTimeout(() => {
+          this.applySyntaxHighlightingColors();
+        }, 1000);
 
         this.prompts.forEach((item) => {
           if (data[item.hideDefaultInputKey] !== null) {
@@ -1206,6 +1267,9 @@ export default {
     onHotkeyClick(e) {
       this.$refs.hotkey.open(e);
     },
+    onSyntaxHighlightingSettingsClick(e) {
+      this.$refs.syntaxHighlightingSettings.open();
+    },
     onSelectLanguageClick(e) {
       this.$refs.selectLanguage.open(e);
     },
@@ -1368,6 +1432,283 @@ export default {
       const item = this.prompts.find((item) => item.id == id);
       if (!item) return;
       this.$refs.chatgptPrompt.open();
+    },
+    onUpdateSyntaxHighlightingColors(colors) {
+      // PRODUCTION-SAFE DEBUG: Always log color updates
+      console.log("🎨 SYNTAX HIGHLIGHTING: Received color update:", colors);
+
+      this.syntaxHighlightingColors = { ...colors };
+
+      // Apply colors immediately without waiting for persistence
+      this.applySyntaxHighlightingColors();
+
+      // Save to storage (async, doesn't block UI updates)
+      this.gradioAPI.setData(
+        "syntaxHighlightingColors",
+        this.syntaxHighlightingColors
+      );
+    },
+    onSyntaxHighlightingSettingsClose() {
+      // Handle settings panel close if needed
+    },
+    applySyntaxHighlightingColors() {
+      // Apply colors to CSS custom properties for real-time updates
+      const root = document.documentElement;
+
+      // Set all CSS custom properties with high priority
+      root.style.setProperty(
+        "--syntax-highlight-embeddings",
+        this.syntaxHighlightingColors.embeddings,
+        "important"
+      );
+      root.style.setProperty(
+        "--syntax-highlight-lora-names",
+        this.syntaxHighlightingColors.loraNames,
+        "important"
+      );
+      root.style.setProperty(
+        "--syntax-highlight-regular-terms",
+        this.syntaxHighlightingColors.regularTerms,
+        "important"
+      );
+      root.style.setProperty(
+        "--syntax-highlight-weight-boost",
+        this.syntaxHighlightingColors.weightValueBoost,
+        "important"
+      );
+      root.style.setProperty(
+        "--syntax-highlight-weight-reduce",
+        this.syntaxHighlightingColors.weightValueReduce,
+        "important"
+      );
+      root.style.setProperty(
+        "--syntax-highlight-punctuation",
+        this.syntaxHighlightingColors.punctuation,
+        "important"
+      );
+      root.style.setProperty(
+        "--syntax-highlight-category-names",
+        this.syntaxHighlightingColors.categoryNames,
+        "important"
+      );
+
+      // ADDITIONAL: Set intermediate CSS custom properties directly
+      // This ensures the extension tag system gets the colors immediately
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueLoraTag-color",
+        this.syntaxHighlightingColors.loraNames,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueLycoTag-color",
+        this.syntaxHighlightingColors.loraNames,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueEmbeddingTag-color",
+        this.syntaxHighlightingColors.embeddings,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueRegularTag-color",
+        this.syntaxHighlightingColors.regularTerms,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-ptv-weightPunctuation-color",
+        this.syntaxHighlightingColors.punctuation,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-ptv-weightValueBoost-color",
+        this.syntaxHighlightingColors.weightValueBoost,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-ptv-weightValueReduce-color",
+        this.syntaxHighlightingColors.weightValueReduce,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-ptv-loraPunctuation-color",
+        this.syntaxHighlightingColors.punctuation,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-ptv-categoryName-color",
+        this.syntaxHighlightingColors.categoryNames,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-ptv-embeddingContent-color",
+        this.syntaxHighlightingColors.embeddings,
+        "important"
+      );
+      root.style.setProperty(
+        "--pp-pt-dsb-ptl-pt-ptm-pte-ptv-loraContent-color",
+        this.syntaxHighlightingColors.loraNames,
+        "important"
+      );
+
+      // PRODUCTION-SAFE DEBUG: Always log color application
+      console.log(
+        "🎨 SYNTAX HIGHLIGHTING: Applied colors:",
+        this.syntaxHighlightingColors
+      );
+
+      // Debug: Check if CSS custom properties are actually set
+      const rootElement = document.documentElement;
+      console.log("🎨 CSS Custom Properties Check:");
+      console.log(
+        "  --syntax-highlight-embeddings:",
+        rootElement.style.getPropertyValue("--syntax-highlight-embeddings")
+      );
+      console.log(
+        "  --syntax-highlight-lora-names:",
+        rootElement.style.getPropertyValue("--syntax-highlight-lora-names")
+      );
+      console.log(
+        "  --syntax-highlight-regular-terms:",
+        rootElement.style.getPropertyValue("--syntax-highlight-regular-terms")
+      );
+
+      // Debug: Check intermediate CSS custom properties
+      console.log("🎨 Intermediate CSS Properties Check:");
+      console.log(
+        "  --pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueEmbeddingTag-color:",
+        rootElement.style.getPropertyValue(
+          "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueEmbeddingTag-color"
+        )
+      );
+      console.log(
+        "  --pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueLoraTag-color:",
+        rootElement.style.getPropertyValue(
+          "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueLoraTag-color"
+        )
+      );
+
+      // Debug: Check computed styles on actual tag elements
+      setTimeout(() => {
+        const tagElements = document.querySelectorAll(".prompt-tag-value");
+        console.log(
+          "🎨 Found",
+          tagElements.length,
+          "tag elements for style inspection"
+        );
+
+        tagElements.forEach((el, index) => {
+          if (index < 3) {
+            // Only log first 3 for brevity
+            const computedStyle = window.getComputedStyle(el);
+            console.log(`🎨 Tag ${index} classes:`, el.className);
+            console.log(`🎨 Tag ${index} computed color:`, computedStyle.color);
+            console.log(
+              `🎨 Tag ${index} expected color:`,
+              el.classList.contains("embedding-tag")
+                ? this.syntaxHighlightingColors.embeddings
+                : el.classList.contains("lora-tag")
+                ? this.syntaxHighlightingColors.loraNames
+                : el.classList.contains("regular-tag")
+                ? this.syntaxHighlightingColors.regularTerms
+                : "unknown"
+            );
+            console.log(
+              `🎨 Tag ${index} innerHTML:`,
+              el.innerHTML.substring(0, 50) + "..."
+            );
+          }
+        });
+      }, 100);
+
+      // Force immediate re-rendering using SAFE approach
+      console.log("🎨 SYNTAX HIGHLIGHTING: Applying color updates safely...");
+
+      // Single immediate update
+      this.forceImmediateColorUpdates();
+
+      // One asynchronous update for DOM-dependent operations
+      this.$nextTick(() => {
+        // Only refresh native highlighting, tags are already updated
+        if (this.$refs.nativeHighlighter) {
+          this.$refs.nativeHighlighter.refreshHighlighting();
+        }
+      });
+    },
+
+    forceImmediateColorUpdates() {
+      // 1. Trigger re-highlighting in native highlighter
+      if (this.$refs.nativeHighlighter) {
+        this.$refs.nativeHighlighter.refreshHighlighting();
+      }
+
+      // 2. Trigger SAFE re-rendering of all prompt tags
+      this.prompts.forEach((item) => {
+        if (this.$refs[item.id] && this.$refs[item.id][0]) {
+          const promptComponent = this.$refs[item.id][0];
+
+          // Use the safe refreshTags method
+          if (promptComponent.refreshTags) {
+            promptComponent.refreshTags();
+          }
+
+          // Also force a Vue update on the prompt component
+          promptComponent.$forceUpdate();
+        }
+      });
+
+      // 3. Force a gentle style recalculation
+      document.body.offsetHeight; // Single reflow is sufficient
+
+      // 4. Additional step: Force re-render of any visible tag elements with direct color application
+      this.$nextTick(() => {
+        const tagElements = document.querySelectorAll(".prompt-tag-value");
+        console.log(
+          "🎨 Applying direct colors to",
+          tagElements.length,
+          "tag elements"
+        );
+
+        tagElements.forEach((el) => {
+          // Apply colors directly to elements as a fallback
+          if (el.classList.contains("embedding-tag")) {
+            el.style.setProperty(
+              "color",
+              this.syntaxHighlightingColors.embeddings,
+              "important"
+            );
+            console.log(
+              "🎨 Applied embedding color directly:",
+              this.syntaxHighlightingColors.embeddings
+            );
+          } else if (
+            el.classList.contains("lora-tag") ||
+            el.classList.contains("lyco-tag")
+          ) {
+            el.style.setProperty(
+              "color",
+              this.syntaxHighlightingColors.loraNames,
+              "important"
+            );
+            console.log(
+              "🎨 Applied LoRA color directly:",
+              this.syntaxHighlightingColors.loraNames
+            );
+          } else if (el.classList.contains("regular-tag")) {
+            el.style.setProperty(
+              "color",
+              this.syntaxHighlightingColors.regularTerms,
+              "important"
+            );
+            console.log(
+              "🎨 Applied regular color directly:",
+              this.syntaxHighlightingColors.regularTerms
+            );
+          }
+
+          // Force style recalculation on each tag
+          el.offsetHeight;
+        });
+      });
     },
     onUseChatgpt(prompt) {
       if (!this.chatgptCurrentPrompt) return;

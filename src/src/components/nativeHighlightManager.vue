@@ -169,16 +169,39 @@ export default {
     },
 
     refreshHighlighting() {
-      // Force refresh of all highlighters
+      // SAFE refresh of all highlighters for color changes
+      // Debug logging (can be removed in production)
+      if (process.env.NODE_ENV === "development") {
+        console.log("Refreshing native highlighting for color changes...");
+      }
+
+      // Single immediate refresh
+      this.forceRefreshAllHighlighters();
+
+      // One asynchronous refresh for DOM-dependent operations
       this.$nextTick(() => {
-        if (this.$refs.highlighters) {
-          this.$refs.highlighters.forEach((highlighter) => {
-            if (highlighter.updateHighlighting) {
+        this.forceRefreshAllHighlighters();
+      });
+    },
+
+    forceRefreshAllHighlighters() {
+      if (this.$refs.highlighters) {
+        this.$refs.highlighters.forEach((highlighter) => {
+          if (highlighter) {
+            // Use the safe forceRefresh method
+            if (highlighter.forceRefresh) {
+              highlighter.forceRefresh();
+            }
+            // Fallback to updateHighlighting if forceRefresh not available
+            else if (highlighter.updateHighlighting) {
               highlighter.updateHighlighting();
             }
-          });
-        }
-      });
+          }
+        });
+      }
+
+      // Gentle style recalculation
+      document.body.offsetHeight;
     },
 
     // Validation methods that use the extension's existing logic
