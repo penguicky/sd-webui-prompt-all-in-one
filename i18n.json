@@ -194,6 +194,8 @@
         "is_remove_lora_after_comma": "是否去除Lora后面的逗号。<br/>勾选后Lora输出为“aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd”。<br/>取消勾选Lora输出为“aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd”。",
         "is_use_novel_ai_weight_symbol": "是否使用NovelAI的权重符号。<br/>勾选后权重符号 () 将变为 {}",
         "is_remove_before_line_comma": "是否去除换行前面的逗号。<br/>勾选后输出为“aaa, bbb<br/>ccc”。<br/>取消勾选输出为“aaa, bbb,<br/>ccc”。",
+        "is_format_category_spacing": "是否格式化分类声明的间距。<br/>勾选后分类声明将格式化为\"{category: term1, term2, term3}\"格式，确保冒号后有一个空格，逗号后有一个空格。",
+        "is_remove_category_trailing_comma": "是否去除分类声明末尾的逗号。<br/>勾选后分类声明\"{category: term1, term2,}\"将格式化为\"{category: term1, term2}\"。",
         "auto_load_webui_prompt": "自动加载WebUI提示词变动。<br/>勾选后，当WebUI中提示词输入框的内容变动时，插件会自动加载关键词解析并格式化。<br/>未勾选，当WebUI中提示词输入框的内容变动时，需要手动点击加载提示词按钮。",
         "load_webui_prompt": "加载WebUI提示词"
       }
@@ -761,6 +763,8 @@
         "is_remove_lora_after_comma": "Remove the comma after Lora or not.<br/>If selected, the Lora output will be 'aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd'.<br/>If unselected, the Lora output will be 'aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd'.",
         "is_use_novel_ai_weight_symbol": "Whether to use NovelAI's weight symbol.<br/>Checking this will change the weight symbol () to {}",
         "is_remove_before_line_comma": "Whether to remove the comma before a line break.<br/>If checked, the output will be \"aaa, bbb<br/>ccc\".<br/>If unchecked, the output will be \"aaa, bbb,<br/>ccc\".",
+        "is_format_category_spacing": "Whether to format category declaration spacing.<br/>When checked, category declarations will be formatted to \"{category: term1, term2, term3}\" format, ensuring one space after colon and one space after commas.",
+        "is_remove_category_trailing_comma": "Whether to remove trailing comma in category declarations.<br/>When checked, category declarations like \"{category: term1, term2,}\" will be formatted to \"{category: term1, term2}\".",
         "auto_load_webui_prompt": "Auto-load WebUI prompt changes.<br/>When checked, the plugin will automatically load and format keyword parsing when the content of the prompt input box in WebUI changes.<br/>When unchecked, you need to manually click the load prompt button when the content of the prompt input box in WebUI changes.",
         "load_webui_prompt": "Load WebUI prompt"
       }

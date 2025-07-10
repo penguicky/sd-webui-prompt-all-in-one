@@ -1259,6 +1259,14 @@ export default {
       type: Boolean,
       default: false,
     },
+    autoFormatCategorySpacing: {
+      type: Boolean,
+      default: true,
+    },
+    autoRemoveCategoryTrailingComma: {
+      type: Boolean,
+      default: true,
+    },
     hideDefaultInput: {
       type: Boolean,
       default: false,
@@ -1639,6 +1647,19 @@ export default {
           if (value !== tag.value) {
             tag.value = value;
             this._setTag(tag);
+          }
+
+          // Apply category formatting if enabled
+          if (
+            this.autoFormatCategorySpacing ||
+            this.autoRemoveCategoryTrailingComma
+          ) {
+            const formattedValue = this._formatCategoryDeclaration(value);
+            if (formattedValue !== value) {
+              tag.value = formattedValue;
+              this._setTag(tag);
+              value = formattedValue;
+            }
           }
           let localValue = common.replaceTag(tag.localValue);
           if (localValue !== tag.localValue) {
@@ -2548,6 +2569,53 @@ export default {
 
       // Default positioning for regular tags
       return baseStyle;
+    },
+
+    // Format category declaration according to autoformat settings
+    _formatCategoryDeclaration(value) {
+      // Check if this is a category declaration
+      const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
+      const match = value.match(categoryRegex);
+
+      if (!match) {
+        return value; // Not a category declaration, return unchanged
+      }
+
+      const [, categoryName, termsStr] = match;
+
+      // Check if this is actually weight syntax (numeric value after colon)
+      const isWeightSyntax = /^\s*\-?[0-9\.]+\s*$/.test(termsStr);
+      if (isWeightSyntax) {
+        return value; // This is weight syntax, not a category declaration
+      }
+
+      let formattedValue = value;
+
+      if (
+        this.autoFormatCategorySpacing ||
+        this.autoRemoveCategoryTrailingComma
+      ) {
+        // Parse and normalize the terms
+        const terms = termsStr
+          .split(",")
+          .map((term) => term.trim())
+          .filter((term) => term.length > 0);
+
+        if (this.autoRemoveCategoryTrailingComma) {
+          // Remove any empty terms that might result from trailing commas
+          // This is already handled by the filter above
+        }
+
+        if (this.autoFormatCategorySpacing) {
+          // Reconstruct with proper spacing: one space after colon, one space after commas
+          formattedValue = `{${categoryName.trim()}: ${terms.join(", ")}}`;
+        } else {
+          // Just remove trailing comma if that's the only option enabled
+          formattedValue = `{${categoryName}:${termsStr.replace(/,\s*$/, "")}}`;
+        }
+      }
+
+      return formattedValue;
     },
   },
 };

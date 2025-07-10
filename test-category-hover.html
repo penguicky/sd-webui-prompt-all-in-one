@@ -92,6 +92,11 @@
           <strong>Smart Tooltips:</strong> Context-aware tooltips that change
           based on whether you're hovering over a category term or regular tag
         </li>
+        <li>
+          <strong>Category Autoformat:</strong> Automatic normalization of
+          category declarations to proper format with consistent spacing and no
+          trailing commas
+        </li>
       </ul>
     </div>
 
@@ -646,6 +651,78 @@
           functional behavior
         </li>
       </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 9: Category Autoformat Examples</h2>
+      <p>
+        Examples of how the autoformat feature normalizes category declarations:
+      </p>
+
+      <div style="margin: 15px 0">
+        <h4>Before Autoformat:</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+          "
+        >
+          <div style="color: #ff6b6b">{category:term1,term2, term3,}</div>
+          <div style="color: #ff6b6b">{category : term1 , term2,term3 }</div>
+          <div style="color: #ff6b6b">{styles: realistic,anime, portrait,}</div>
+          <div style="color: #ff6b6b">
+            {models:&lt;lora:style1&gt;,normal, &lt;lora:style2:1.2&gt;,}
+          </div>
+        </div>
+
+        <h4>After Autoformat:</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+          "
+        >
+          <div style="color: #4ecdc4">{category: term1, term2, term3}</div>
+          <div style="color: #4ecdc4">{category: term1, term2, term3}</div>
+          <div style="color: #4ecdc4">{styles: realistic, anime, portrait}</div>
+          <div style="color: #4ecdc4">
+            {models: &lt;lora:style1&gt;, normal, &lt;lora:style2:1.2&gt;}
+          </div>
+        </div>
+
+        <h4>Autoformat Rules:</h4>
+        <ul style="margin-top: 10px">
+          <li>
+            <strong>Spacing after colon:</strong> Exactly one space after the
+            colon
+          </li>
+          <li>
+            <strong>Comma spacing:</strong> Exactly one space after each comma
+          </li>
+          <li>
+            <strong>No trailing comma:</strong> Removes comma before closing
+            brace
+          </li>
+          <li>
+            <strong>Preserve weights:</strong> Maintains term weights like
+            (term:1.2)
+          </li>
+          <li>
+            <strong>Preserve LoRA syntax:</strong> Keeps
+            &lt;lora:name:strength&gt; format intact
+          </li>
+          <li>
+            <strong>Weight syntax protection:</strong> Doesn't format weight
+            syntax like {term:1.2}
+          </li>
+        </ul>
+      </div>
     </div>
 
     <script>

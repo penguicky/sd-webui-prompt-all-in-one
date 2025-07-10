@@ -39,6 +39,8 @@ export default {
       isActive: false,
       debounceTimer: null,
       resizeTimer: null,
+      mutationObserver: null,
+      resizeObserver: null,
     };
   },
   mounted() {
@@ -94,6 +96,55 @@ export default {
       this.updateHighlighting();
 
       this.isActive = true;
+    },
+
+    setupObservers() {
+      // Set up mutation observer to watch for DOM changes that might affect textarea
+      if (this.targetTextarea && typeof MutationObserver !== "undefined") {
+        this.mutationObserver = new MutationObserver((mutations) => {
+          let shouldUpdate = false;
+          mutations.forEach((mutation) => {
+            // Check if the textarea or its container has been modified
+            if (
+              mutation.target === this.targetTextarea ||
+              (mutation.target.contains &&
+                mutation.target.contains(this.targetTextarea))
+            ) {
+              shouldUpdate = true;
+            }
+          });
+
+          if (shouldUpdate) {
+            // Debounce updates to avoid excessive re-rendering
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => {
+              this.updateHighlighting();
+            }, 100);
+          }
+        });
+
+        // Observe the textarea and its parent container
+        const container =
+          this.targetTextarea.closest(".gradio-container") || document.body;
+        this.mutationObserver.observe(container, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ["style", "class"],
+        });
+      }
+
+      // Set up resize observer for the textarea itself
+      if (this.targetTextarea && typeof ResizeObserver !== "undefined") {
+        this.resizeObserver = new ResizeObserver((entries) => {
+          clearTimeout(this.resizeTimer);
+          this.resizeTimer = setTimeout(() => {
+            this.updateHighlighting();
+          }, 50);
+        });
+
+        this.resizeObserver.observe(this.targetTextarea);
+      }
     },
 
     applyOverlayStyles() {
@@ -969,6 +1020,17 @@ export default {
 
       // Remove window resize listener
       window.removeEventListener("resize", this.onWindowResize);
+
+      // Disconnect observers
+      if (this.mutationObserver) {
+        this.mutationObserver.disconnect();
+        this.mutationObserver = null;
+      }
+
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
 
       clearTimeout(this.debounceTimer);
       clearTimeout(this.resizeTimer);

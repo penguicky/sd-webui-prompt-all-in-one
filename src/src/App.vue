@@ -31,6 +31,12 @@
         v-model:auto-remove-lora-after-comma="autoRemoveLoraAfterComma"
         v-model:use-novel-ai-weight-symbol="useNovelAiWeightSymbol"
         v-model:auto-remove-before-line-comma="autoRemoveBeforeLineComma"
+        :auto-format-category-spacing="autoFormatCategorySpacing"
+        :auto-remove-category-trailing-comma="autoRemoveCategoryTrailingComma"
+        v-model:auto-format-category-spacing="autoFormatCategorySpacing"
+        v-model:auto-remove-category-trailing-comma="
+          autoRemoveCategoryTrailingComma
+        "
         :hide-default-input="item.hideDefaultInput"
         @update:hide-default-input="onUpdateHideDefaultInput(item.id, $event)"
         :auto-load-webui-prompt="item.autoLoadWebuiPrompt"
@@ -116,6 +122,10 @@
       v-model:auto-remove-lora-after-comma="autoRemoveLoraAfterComma"
       v-model:use-novel-ai-weight-symbol="useNovelAiWeightSymbol"
       v-model:auto-remove-before-line-comma="autoRemoveBeforeLineComma"
+      v-model:auto-format-category-spacing="autoFormatCategorySpacing"
+      v-model:auto-remove-category-trailing-comma="
+        autoRemoveCategoryTrailingComma
+      "
     ></prompt-format>
     <blacklist
       ref="blacklist"
@@ -398,6 +408,8 @@ export default {
       autoRemoveLoraAfterComma: false,
       useNovelAiWeightSymbol: false,
       autoRemoveBeforeLineComma: false,
+      autoFormatCategorySpacing: true,
+      autoRemoveCategoryTrailingComma: true,
       // hideDefaultInput: false,
       enableTooltip: true,
       enableNativeHighlighting: true,
@@ -637,6 +649,37 @@ export default {
           .then((data) => {})
           .catch((err) => {});
       },
+      immediate: false,
+    },
+    autoFormatCategorySpacing: {
+      handler: function (val, oldVal) {
+        if (!this.startWatchSave) return;
+        console.log("onAutoFormatCategorySpacingChange", val);
+        this.gradioAPI
+          .setData("autoFormatCategorySpacing", val)
+          .then((data) => {
+            this.prompts.forEach((item) => {
+              this.$refs[item.id][0].updatePrompt();
+            });
+          })
+          .catch((err) => {});
+      },
+      immediate: false,
+    },
+    autoRemoveCategoryTrailingComma: {
+      handler: function (val, oldVal) {
+        if (!this.startWatchSave) return;
+        console.log("onAutoRemoveCategoryTrailingCommaChange", val);
+        this.gradioAPI
+          .setData("autoRemoveCategoryTrailingComma", val)
+          .then((data) => {
+            this.prompts.forEach((item) => {
+              this.$refs[item.id][0].updatePrompt();
+            });
+          })
+          .catch((err) => {});
+      },
+      immediate: false,
     },
     /*hideDefaultInput: {
             handler: function (val, oldVal) {
@@ -882,6 +925,8 @@ export default {
         "autoRemoveLoraAfterComma",
         "useNovelAiWeightSymbol",
         "autoRemoveBeforeLineComma",
+        "autoFormatCategorySpacing",
+        "autoRemoveCategoryTrailingComma",
         /*'hideDefaultInput', */ "translateApi",
         "enableTooltip",
         "enableNativeHighlighting",
@@ -985,6 +1030,13 @@ export default {
         }
         if (data.autoRemoveBeforeLineComma !== null) {
           this.autoRemoveBeforeLineComma = data.autoRemoveBeforeLineComma;
+        }
+        if (data.autoFormatCategorySpacing !== null) {
+          this.autoFormatCategorySpacing = data.autoFormatCategorySpacing;
+        }
+        if (data.autoRemoveCategoryTrailingComma !== null) {
+          this.autoRemoveCategoryTrailingComma =
+            data.autoRemoveCategoryTrailingComma;
         }
         /*if (data.hideDefaultInput !== null) {
                     this.hideDefaultInput = data.hideDefaultInput
