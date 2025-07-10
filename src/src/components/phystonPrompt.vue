@@ -659,6 +659,8 @@
                 @mousedown.stop=""
                 @mousemove.stop=""
                 @mouseup.stop=""
+                @mouseenter.stop="onExtendMenuMouseEnter"
+                @mouseleave.stop="onExtendMenuMouseLeave"
               >
                 <vue-number-input
                   class="input-number"
@@ -768,12 +770,33 @@
                   type="button"
                   name="enable"
                   v-tooltip="
-                    getLang(tag.disabled ? 'enable_keyword' : 'disable_keyword')
+                    categoryTermHoverData &&
+                    categoryTermHoverData.tag.id === tag.id
+                      ? categoryTermHoverData.termValue.startsWith('[') &&
+                        categoryTermHoverData.termValue.endsWith(']')
+                        ? 'Enable this term'
+                        : 'Disable this term'
+                      : getLang(
+                          tag.disabled ? 'enable_keyword' : 'disable_keyword'
+                        )
                   "
                   @click="onDisabledTagClick(tag.id)"
                 >
                   <icon-svg v-if="!tag.disabled" name="disabled" />
                   <icon-svg v-if="tag.disabled" name="enable" />
+                </button>
+                <button
+                  type="button"
+                  name="delete-term"
+                  v-tooltip="
+                    categoryTermHoverData &&
+                    categoryTermHoverData.tag.id === tag.id
+                      ? 'Delete this term'
+                      : getLang('delete_keyword') || 'Delete keyword'
+                  "
+                  @click="onDeleteTermClick(tag.id)"
+                >
+                  <icon-svg name="remove" />
                 </button>
               </div>
             </div>

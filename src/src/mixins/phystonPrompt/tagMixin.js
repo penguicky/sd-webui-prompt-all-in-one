@@ -7,6 +7,8 @@ export default {
       tagClickTimeId: 0,
       showExtendId: "",
       categoryTermHoverData: null, // Store data about the hovered category term
+      extendMenuMouseIn: false, // Track if mouse is in the extend menu
+      extendMenuHideTimer: null, // Timer for delayed menu hiding
     };
   },
   mounted() {
@@ -555,7 +557,18 @@ export default {
     onTagMouseLeave(id) {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return false;
-      if (this.hotkey.hover === "extend") this.showExtendId = "";
+      if (this.hotkey.hover === "extend") {
+        // If we're showing extend menu for a category term, use delayed hiding
+        if (
+          this.categoryTermHoverData &&
+          this.categoryTermHoverData.tag.id === id
+        ) {
+          this._hideExtendMenuDelayed();
+        } else {
+          // For regular tags, hide immediately
+          this.showExtendId = "";
+        }
+      }
       this.$emit("hideExtraNetworks");
     },
     onTagClick(id) {
@@ -781,6 +794,22 @@ export default {
       this.tags.splice(index, 1);
       this.updateTags();
     },
+
+    // New method for deleting individual category terms
+    onDeleteTermClick(id) {
+      // Check if we're working with a category term
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === id
+      ) {
+        const { tag, termValue, termIndex } = this.categoryTermHoverData;
+        this._deleteCategoryTerm(tag, termIndex);
+        return;
+      }
+
+      // For regular tags, use the standard delete functionality
+      this.onDeleteTagClick(id);
+    },
     onFavoriteTagClick(id) {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return false;
@@ -811,6 +840,16 @@ export default {
       }
     },
     onDisabledTagClick(id) {
+      // Check if we're working with a category term
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === id
+      ) {
+        const { tag, termValue, termIndex } = this.categoryTermHoverData;
+        this._disableCategoryTerm(tag, termIndex, termValue);
+        return;
+      }
+
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return;
       tag.disabled = !tag.disabled;
@@ -1071,7 +1110,8 @@ export default {
         const termId = termWrapper.getAttribute("data-term-id");
 
         if (this.categoryTermHoverData.termId === termId) {
-          this.showExtendId = "";
+          // Use delayed hiding to allow mouse to move to extend menu
+          this._hideExtendMenuDelayed();
 
           // Critical fix: Don't clear categoryTermHoverData immediately
           // Store the modified term values for future hover events
@@ -1080,13 +1120,41 @@ export default {
             this.categoryTermHoverData.termIndex,
             this.categoryTermHoverData.termValue
           );
-
-          this.categoryTermHoverData = null;
         }
 
         // Prevent the normal tag hover from triggering
         event.stopPropagation();
       }
+    },
+
+    // Handle delayed hiding of extend menu
+    _hideExtendMenuDelayed() {
+      if (this.extendMenuHideTimer) {
+        clearTimeout(this.extendMenuHideTimer);
+      }
+
+      this.extendMenuHideTimer = setTimeout(() => {
+        this.extendMenuHideTimer = null;
+        if (!this.extendMenuMouseIn) {
+          this.showExtendId = "";
+          this.categoryTermHoverData = null;
+        }
+      }, 100); // Small delay to allow mouse to move to menu
+    },
+
+    // Handle extend menu mouse enter
+    onExtendMenuMouseEnter() {
+      this.extendMenuMouseIn = true;
+      if (this.extendMenuHideTimer) {
+        clearTimeout(this.extendMenuHideTimer);
+        this.extendMenuHideTimer = null;
+      }
+    },
+
+    // Handle extend menu mouse leave
+    onExtendMenuMouseLeave() {
+      this.extendMenuMouseIn = false;
+      this._hideExtendMenuDelayed();
     },
 
     // Create a virtual tag object for category terms that can work with existing weight methods
@@ -1234,6 +1302,91 @@ export default {
         // Re-setup listeners after DOM update
         this._setupCategoryTermHoverListeners();
       });
+    },
+
+    // Delete individual term from a category declaration
+    _deleteCategoryTerm(tag, termIndex) {
+      const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
+      const match = tag.value.match(categoryRegex);
+
+      if (!match) return;
+
+      const [, categoryName, termsStr] = match;
+      const terms = termsStr.split(",").map((term) => term.trim());
+
+      if (termIndex >= terms.length) return;
+
+      // Remove the term at the specified index
+      terms.splice(termIndex, 1);
+
+      // If no terms left, delete the entire tag
+      if (terms.length === 0) {
+        const tagIndex = this.tags.indexOf(tag);
+        this.tags.splice(tagIndex, 1);
+        this.showExtendId = "";
+        this.categoryTermHoverData = null;
+        this.updateTags();
+        return;
+      }
+
+      // Reconstruct the category declaration with proper formatting
+      const newValue = `{${categoryName}: ${terms.join(", ")}}`;
+
+      // Update the tag
+      tag.value = newValue;
+      this._setTag(tag);
+      this.updateTags();
+
+      // Clear hover data since the term no longer exists
+      this.showExtendId = "";
+      this.categoryTermHoverData = null;
+    },
+
+    // Disable/enable individual term within a category declaration
+    _disableCategoryTerm(tag, termIndex, termValue) {
+      const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
+      const match = tag.value.match(categoryRegex);
+
+      if (!match) return;
+
+      const [, categoryName, termsStr] = match;
+      const terms = termsStr.split(",").map((term) => term.trim());
+
+      if (termIndex >= terms.length) return;
+
+      let modifiedTerm = terms[termIndex];
+
+      // Check if the term is currently disabled (wrapped in [])
+      const isDisabled =
+        modifiedTerm.startsWith("[") && modifiedTerm.endsWith("]");
+
+      if (isDisabled) {
+        // Enable the term by removing the brackets
+        modifiedTerm = modifiedTerm.slice(1, -1);
+      } else {
+        // Disable the term by wrapping it in brackets
+        modifiedTerm = `[${modifiedTerm}]`;
+      }
+
+      // Update the term in the array
+      terms[termIndex] = modifiedTerm;
+
+      // Reconstruct the category declaration
+      const newValue = `{${categoryName}: ${terms.join(", ")}}`;
+
+      // Update the tag
+      tag.value = newValue;
+      this._setTag(tag);
+      this.updateTags();
+
+      // Update hover data with new term value
+      this.categoryTermHoverData.termValue = modifiedTerm;
+
+      // Store the modified term value persistently
+      this._storeModifiedTermValue(tag.id, termIndex, modifiedTerm);
+
+      // Synchronize DOM attribute with modified term value
+      this._syncCategoryTermAttribute(tag.id, termIndex, modifiedTerm);
     },
 
     // Helper function to extract base term from weighted syntax

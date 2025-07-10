@@ -64,6 +64,37 @@
   <body>
     <h1>Category Term Hover Functionality Test</h1>
 
+    <div
+      style="
+        background: #f0f8ff;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 8px;
+        border-left: 4px solid #4a54ff;
+        color: #333;
+      "
+    >
+      <h3 style="margin-top: 0; color: #2c5aa0">New Features Added:</h3>
+      <ul style="margin-bottom: 0">
+        <li>
+          <strong>Delete Term Button:</strong> Delete individual terms from
+          category declarations while maintaining proper syntax
+        </li>
+        <li>
+          <strong>Granular Disable:</strong> Disable/enable individual terms
+          within categories (wraps terms in [brackets])
+        </li>
+        <li>
+          <strong>Hover Menu Persistence:</strong> Menu stays visible when
+          moving cursor from term to menu area
+        </li>
+        <li>
+          <strong>Smart Tooltips:</strong> Context-aware tooltips that change
+          based on whether you're hovering over a category term or regular tag
+        </li>
+      </ul>
+    </div>
+
     <div class="test-section">
       <h2>Test 1: Basic Category with Regular Terms</h2>
       <p>Expected: Each term should be hoverable and show context menu</p>
@@ -644,20 +675,27 @@
         });
       });
 
-      // Add visual indicator for where menu would appear
+      // Add visual indicator for where menu would appear with persistence test
       document.querySelectorAll(".category-term-wrapper").forEach((wrapper) => {
         wrapper.addEventListener("mouseenter", function () {
-          // Create a temporary indicator
+          // Create a temporary indicator that simulates the extend menu
           const indicator = document.createElement("div");
           indicator.style.position = "absolute";
-          indicator.style.background = "rgba(74, 84, 255, 0.3)";
+          indicator.style.background = "rgba(74, 84, 255, 0.9)";
           indicator.style.border = "1px solid #4a54ff";
           indicator.style.borderRadius = "4px";
-          indicator.style.padding = "2px 8px";
-          indicator.style.fontSize = "10px";
+          indicator.style.padding = "8px 12px";
+          indicator.style.fontSize = "12px";
           indicator.style.color = "#fff";
           indicator.style.zIndex = "1000";
-          indicator.textContent = "Menu would appear here";
+          indicator.style.cursor = "pointer";
+          indicator.innerHTML = `
+            <div style="margin-bottom: 4px; font-weight: bold;">Extended Menu</div>
+            <div style="font-size: 10px; margin-bottom: 2px;">• Weight controls</div>
+            <div style="font-size: 10px; margin-bottom: 2px;">• Delete this term</div>
+            <div style="font-size: 10px; margin-bottom: 2px;">• Disable this term</div>
+            <div style="font-size: 10px;">• Other actions</div>
+          `;
           indicator.className = "menu-indicator";
 
           const rect = this.getBoundingClientRect();
@@ -665,12 +703,36 @@
           indicator.style.top = rect.top - 25 + "px";
 
           document.body.appendChild(indicator);
-        });
 
-        wrapper.addEventListener("mouseleave", function () {
-          // Remove indicator
-          const indicators = document.querySelectorAll(".menu-indicator");
-          indicators.forEach((indicator) => indicator.remove());
+          // Add hover persistence behavior to test the fix
+          let hideTimer = null;
+          let menuMouseIn = false;
+
+          const hideMenu = () => {
+            if (hideTimer) clearTimeout(hideTimer);
+            hideTimer = setTimeout(() => {
+              if (!menuMouseIn && indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+              }
+            }, 100);
+          };
+
+          // Menu mouse events
+          indicator.addEventListener("mouseenter", () => {
+            menuMouseIn = true;
+            if (hideTimer) {
+              clearTimeout(hideTimer);
+              hideTimer = null;
+            }
+          });
+
+          indicator.addEventListener("mouseleave", () => {
+            menuMouseIn = false;
+            hideMenu();
+          });
+
+          // Term mouse leave
+          this.addEventListener("mouseleave", hideMenu, { once: true });
         });
       });
     </script>
