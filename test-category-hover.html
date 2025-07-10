@@ -326,45 +326,134 @@
     </div>
 
     <div class="test-section">
-      <h2>Test 9: Critical Regression Fix - LoRA Weight Persistence</h2>
+      <h2>Test 9: Regression Analysis - LoRA vs Other Term Types</h2>
       <p>
-        Expected: LoRA terms should maintain their modified weight values
-        through subsequent hover events
+        <strong>Critical Investigation:</strong> Compare behavior between LoRA
+        terms and other term types to identify why only LoRA terms lose weight
+        values during hover events.
       </p>
+
+      <h3>Test Case A: LoRA Term (Problematic)</h3>
       <div class="test-prompt">
         <span class="weight-punctuation">{</span
         ><span class="category-name">models</span
         ><span class="weight-punctuation">:</span>
         <span
           class="category-term-wrapper"
-          data-term-id="test-9-0"
-          data-term-value="(realistic_vision:0.9)"
+          data-term-id="test-9a-0"
+          data-term-value="&lt;lora:detailed_face:1.2&gt;"
           data-term-index="0"
-          ><span class="weight-punctuation">(</span
-          ><span class="character">realistic_vision</span
-          ><span class="weight-punctuation">:</span
-          ><span class="weight-value-reduce">0.9</span
-          ><span class="weight-punctuation">)</span></span
-        >,
-        <span
-          class="category-term-wrapper"
-          data-term-id="test-9-1"
-          data-term-value="&lt;lora:detailed_face:1.3&gt;"
-          data-term-index="1"
           ><span class="weight-punctuation">&lt;</span
-          ><span class="lora-content">lora:detailed_face:1.3</span
+          ><span class="lora-content">lora:detailed_face:1.2</span
           ><span class="weight-punctuation">&gt;</span></span
         >
         <span class="weight-punctuation">}</span>
       </div>
       <p>
         <small
-          >Critical Test: After modifying the LoRA weight (e.g., from 1.3 to
-          1.5), subsequent hover events should preserve the new weight value
-          (1.5) and not revert to the original (1.3) or lose the weight
-          entirely.</small
+          >Expected Issue: After modifying weight to 1.5, hover events revert to
+          1.2 or lose weight entirely</small
         >
       </p>
+
+      <h3>Test Case B: Embedding Term (Working)</h3>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">style</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-9b-0"
+          data-term-value="(embedding_name:1.2)"
+          data-term-index="0"
+          ><span class="weight-punctuation">(</span
+          ><span class="embedding-content">embedding_name</span
+          ><span class="weight-punctuation">:</span
+          ><span class="weight-value-boost">1.2</span
+          ><span class="weight-punctuation">)</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+      <p>
+        <small
+          >Expected Behavior: After modifying weight to 1.5, hover events
+          maintain 1.5</small
+        >
+      </p>
+
+      <h3>Test Case C: Regular Term (Working)</h3>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">mood</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-9c-0"
+          data-term-value="(dramatic:1.2)"
+          data-term-index="0"
+          ><span class="weight-punctuation">(</span
+          ><span class="character">dramatic</span
+          ><span class="weight-punctuation">:</span
+          ><span class="weight-value-boost">1.2</span
+          ><span class="weight-punctuation">)</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+      <p>
+        <small
+          >Expected Behavior: After modifying weight to 1.5, hover events
+          maintain 1.5</small
+        >
+      </p>
+
+      <h3>Root Cause Analysis</h3>
+      <ul>
+        <li>
+          <strong>HTML Escaping Complexity:</strong> LoRA uses &lt;&gt;
+          requiring complex HTML escaping vs embeddings/regular terms using ()
+          with simple escaping
+        </li>
+        <li>
+          <strong>Weight Syntax Differences:</strong> LoRA internal
+          &lt;lora:name:weight&gt; vs external (term:weight) syntax
+        </li>
+        <li>
+          <strong>Processing Path Divergence:</strong> LoRA uses
+          _modifyLoRAWeight() vs common.setLayers() for other terms
+        </li>
+        <li>
+          <strong>DOM Rendering Pipeline:</strong> LoRA uses
+          _highlightLoraSyntax() vs _highlightWeightSyntax() creating different
+          update timing
+        </li>
+        <li>
+          <strong>Critical Issue:</strong> Race condition between DOM
+          re-rendering and data-term-value attribute synchronization
+          specifically affects LoRA terms due to complex HTML escaping
+        </li>
+      </ul>
+
+      <h3>Fix Applied</h3>
+      <ul>
+        <li>
+          🔧 <strong>DOM Attribute Synchronization:</strong> Added
+          _syncCategoryTermAttribute() method to explicitly update
+          data-term-value attributes after weight modifications
+        </li>
+        <li>
+          ⚡ <strong>Timing Fix:</strong> Ensures DOM attributes are updated
+          before listener re-setup to prevent stale data retrieval
+        </li>
+        <li>
+          🎯 <strong>LoRA-Specific Solution:</strong> Addresses the unique HTML
+          escaping and timing issues that specifically affect LoRA terms
+        </li>
+        <li>
+          🔍 <strong>Consistency Guarantee:</strong> Synchronizes
+          categoryTermHoverData with actual DOM state to prevent value
+          mismatches
+        </li>
+      </ul>
     </div>
 
     <div class="test-section">
@@ -501,29 +590,6 @@
         <li>
           🔍 <strong>Improved Hover Data Handling:</strong> Enhanced term value
           processing to maintain original LoRA syntax during hover interactions
-        </li>
-      </ul>
-
-      <h3>Critical Regression Fix</h3>
-      <ul>
-        <li>
-          🚨 <strong>Fixed LoRA Weight Persistence Regression:</strong> LoRA
-          terms now maintain their modified weight values through subsequent
-          hover events
-        </li>
-        <li>
-          🔧 <strong>Enhanced DOM Attribute Synchronization:</strong> Added
-          _updateCategoryTermAttribute() method to explicitly update
-          data-term-value attributes after weight modifications
-        </li>
-        <li>
-          ⚡ <strong>Improved DOM Update Timing:</strong> Ensured DOM attributes
-          are updated before listener re-setup to prevent stale data issues
-        </li>
-        <li>
-          🔍 <strong>Enhanced Hover Data Consistency:</strong> Synchronized
-          categoryTermHoverData with actual DOM attributes to prevent value
-          mismatches
         </li>
       </ul>
 

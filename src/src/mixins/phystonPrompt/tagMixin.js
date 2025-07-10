@@ -1011,11 +1011,33 @@ export default {
         const rect = termWrapper.getBoundingClientRect();
         const tagRect = tagElement.getBoundingClientRect();
 
+        // Critical fix: Check if we have updated term value stored for this exact term
+        // This prevents LoRA weight loss by using the most recent modified value
+        let finalTermValue = termValue;
+
+        // First check if we have a stored modified value for this term
+        const storedValue = this._getStoredModifiedTermValue(tagId, termIndex);
+        if (storedValue) {
+          finalTermValue = common.escapeHtml(storedValue);
+        }
+        // Fallback to current hover data if available
+        else if (
+          this.categoryTermHoverData &&
+          this.categoryTermHoverData.tag.id === tagId &&
+          this.categoryTermHoverData.termIndex === termIndex &&
+          this.categoryTermHoverData.termValue
+        ) {
+          // Use the updated term value from previous modification
+          finalTermValue = common.escapeHtml(
+            this.categoryTermHoverData.termValue
+          );
+        }
+
         // Store category term hover data with position information
         // Unescape HTML entities from the term value
-        const unescapedTermValue = termValue
-          ? this._unescapeHtml(termValue)
-          : termValue;
+        const unescapedTermValue = finalTermValue
+          ? this._unescapeHtml(finalTermValue)
+          : finalTermValue;
 
         this.categoryTermHoverData = {
           tagId: tagId,
@@ -1050,6 +1072,15 @@ export default {
 
         if (this.categoryTermHoverData.termId === termId) {
           this.showExtendId = "";
+
+          // Critical fix: Don't clear categoryTermHoverData immediately
+          // Store the modified term values for future hover events
+          this._storeModifiedTermValue(
+            this.categoryTermHoverData.tag.id,
+            this.categoryTermHoverData.termIndex,
+            this.categoryTermHoverData.termValue
+          );
+
           this.categoryTermHoverData = null;
         }
 
@@ -1186,10 +1217,14 @@ export default {
       // Update hover data with new term value
       this.categoryTermHoverData.termValue = modifiedTerm;
 
+      // Critical fix: Store the modified term value persistently
+      this._storeModifiedTermValue(tag.id, termIndex, modifiedTerm);
+
       // Force re-render to ensure syntax highlighting is updated
       this.$nextTick(() => {
-        // Update the DOM attribute for the specific term to ensure consistency
-        this._updateCategoryTermAttribute(tag.id, termIndex, modifiedTerm);
+        // Critical fix: Explicitly update DOM attribute for the modified term
+        // This ensures the data-term-value attribute reflects the new weight
+        this._syncCategoryTermAttribute(tag.id, termIndex, modifiedTerm);
 
         // Force custom colors to be applied if available
         if (this._applyCustomColorsToTags) {
@@ -1235,8 +1270,40 @@ export default {
       return div.textContent || div.innerText || "";
     },
 
-    // Helper function to update DOM attribute for a specific category term
-    _updateCategoryTermAttribute(tagId, termIndex, newTermValue) {
+    // Critical fix: Store modified term values persistently
+    // This prevents LoRA weight loss by maintaining modified values across hover events
+    _storeModifiedTermValue(tagId, termIndex, termValue) {
+      if (!this.modifiedTermValues) {
+        this.modifiedTermValues = new Map();
+      }
+
+      const key = `${tagId}-${termIndex}`;
+      this.modifiedTermValues.set(key, termValue);
+    },
+
+    // Get stored modified term value
+    _getStoredModifiedTermValue(tagId, termIndex) {
+      if (!this.modifiedTermValues) {
+        return null;
+      }
+
+      const key = `${tagId}-${termIndex}`;
+      return this.modifiedTermValues.get(key);
+    },
+
+    // Clear stored modified term value (when tag is deleted or reset)
+    _clearStoredModifiedTermValue(tagId, termIndex) {
+      if (!this.modifiedTermValues) {
+        return;
+      }
+
+      const key = `${tagId}-${termIndex}`;
+      this.modifiedTermValues.delete(key);
+    },
+
+    // Critical fix: Synchronize DOM attribute with modified term value
+    // This prevents LoRA weight loss during hover events after modifications
+    _syncCategoryTermAttribute(tagId, termIndex, newTermValue) {
       // Find the tag element in the DOM
       const tagElement = this.$el.querySelector(`[data-id="${tagId}"]`);
       if (!tagElement) return;
@@ -1248,12 +1315,13 @@ export default {
       if (!termWrapper) return;
 
       // Update the data-term-value attribute with the new value
+      // This is critical for LoRA terms to prevent weight loss on subsequent hovers
       termWrapper.setAttribute(
         "data-term-value",
         common.escapeHtml(newTermValue)
       );
 
-      // Also update the hover data if it matches this term
+      // Also update the hover data if it matches this term to maintain consistency
       if (
         this.categoryTermHoverData &&
         this.categoryTermHoverData.tag.id === tagId &&
