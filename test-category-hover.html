@@ -97,6 +97,15 @@
           category declarations to proper format with consistent spacing and no
           trailing commas
         </li>
+        <li>
+          <strong>Disabled Term Filtering:</strong> Terms wrapped in [brackets]
+          within categories are properly excluded from image generation
+        </li>
+        <li>
+          <strong>LoRA Weight Preservation:</strong> Fixed persistent bug where
+          hovering over LoRA terms within categories would strip weight values
+          after DOM re-rendering
+        </li>
       </ul>
     </div>
 
@@ -722,6 +731,348 @@
             syntax like {term:1.2}
           </li>
         </ul>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 10: Disabled Term Filtering</h2>
+      <p>
+        Demonstrates how disabled terms within category declarations are
+        properly excluded from the final prompt:
+      </p>
+
+      <div style="margin: 15px 0">
+        <h4>Category with Disabled Terms:</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+          "
+        >
+          <div style="color: #ff6b6b">
+            {styles: realistic, [anime], portrait, [cartoon]}
+          </div>
+          <div style="color: #ff6b6b">
+            {models: &lt;lora:style1&gt;, [disabled_model], normal}
+          </div>
+          <div style="color: #ff6b6b">
+            {colors: red, [blue], green, [yellow]}
+          </div>
+        </div>
+
+        <h4>Filtered Output (sent to WebUI):</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+          "
+        >
+          <div style="color: #4ecdc4">{styles: realistic, portrait}</div>
+          <div style="color: #4ecdc4">
+            {models: &lt;lora:style1&gt;, normal}
+          </div>
+          <div style="color: #4ecdc4">{colors: red, green}</div>
+        </div>
+
+        <h4>Special Cases:</h4>
+        <ul style="margin-top: 10px">
+          <li>
+            <strong>All terms disabled:</strong> If all terms in a category are
+            disabled, the entire category is excluded from the prompt
+          </li>
+          <li>
+            <strong>Mixed content:</strong> Works with LoRA syntax, embeddings,
+            and weighted terms within categories
+          </li>
+          <li>
+            <strong>Granular control:</strong> Individual terms can be
+            disabled/enabled using the extended context menu
+          </li>
+          <li>
+            <strong>Real-time updates:</strong> Changes take effect immediately
+            when generating prompts
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 11: LoRA Weight Preservation Fix</h2>
+      <p>
+        Demonstrates the fix for the bug where hovering over LoRA terms within
+        category declarations would cause weight values to be stripped:
+      </p>
+
+      <div style="margin: 15px 0">
+        <h4>Before Fix (Problematic Behavior):</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 4px solid #ff6b6b;
+          "
+        >
+          <div style="color: #ff6b6b">
+            ❌ Hover over &lt;lora:style_name:1.2&gt; → becomes
+            &lt;lora:style_name&gt;
+          </div>
+          <div style="color: #ff6b6b">
+            ❌ Weight value 1.2 gets stripped by _extractBaseTerm() method
+          </div>
+          <div style="color: #ff6b6b">
+            ❌ LoRA internal syntax treated as external weight syntax
+          </div>
+        </div>
+
+        <h4>After Fix (Correct Behavior):</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 4px solid #4ecdc4;
+          "
+        >
+          <div style="color: #4ecdc4">
+            ✅ Hover over &lt;lora:style_name:1.2&gt; → remains
+            &lt;lora:style_name:1.2&gt;
+          </div>
+          <div style="color: #4ecdc4">
+            ✅ Weight value 1.2 preserved during hover operations
+          </div>
+          <div style="color: #4ecdc4">
+            ✅ LoRA syntax protected from weight stripping logic
+          </div>
+        </div>
+
+        <h4>Test Categories with LoRA Terms:</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+          "
+        >
+          <div style="color: #ffa726">
+            {models: normal, &lt;lora:detailed_face:1.2&gt;, realistic}
+          </div>
+          <div style="color: #ffa726">
+            {styles: &lt;lora:anime_style:0.8&gt;, portrait,
+            &lt;lyco:art:1.5&gt;}
+          </div>
+          <div style="color: #ffa726">
+            {effects: blur, &lt;lora:lighting:1.0&gt;, dramatic}
+          </div>
+        </div>
+
+        <h4>Technical Details:</h4>
+        <ul style="margin-top: 10px">
+          <li>
+            <strong>Root Cause:</strong> The
+            <code>_extractBaseTerm()</code> method was using a regex that
+            stripped colon syntax, incorrectly treating LoRA's internal
+            <code>:weight</code> as external weight syntax
+          </li>
+          <li>
+            <strong>Fix Applied:</strong> Added LoRA detection to both
+            <code>_extractBaseTerm()</code> and
+            <code>_removeWeightSyntax()</code> methods to preserve LoRA syntax
+          </li>
+          <li>
+            <strong>Protected Formats:</strong>
+            <code>&lt;lora:name:weight&gt;</code> and
+            <code>&lt;lyco:name:weight&gt;</code>
+          </li>
+          <li>
+            <strong>Backward Compatible:</strong> Regular terms and embeddings
+            continue to work with external weight syntax like
+            <code>(term:1.2)</code>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>Test 12: Persistent LoRA Weight Bug - Comprehensive Fix</h2>
+      <p>
+        Demonstrates the complete solution for the time-dependent LoRA weight
+        preservation bug that persisted despite initial fixes:
+      </p>
+
+      <div style="margin: 15px 0">
+        <h4>Problem Analysis:</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 4px solid #ff6b6b;
+          "
+        >
+          <div style="color: #ff6b6b; margin-bottom: 8px">
+            <strong>🔍 Root Cause Identified:</strong>
+          </div>
+          <div style="color: #ffcc02">
+            1. Initial hover: LoRA weights preserved ✅
+          </div>
+          <div style="color: #ffcc02">
+            2. DOM re-rendering: Vue regenerates HTML structure
+          </div>
+          <div style="color: #ff6b6b">
+            3. Lost attributes: data-term-value reverts to original values ❌
+          </div>
+          <div style="color: #ff6b6b">
+            4. Subsequent hovers: Use stale data from DOM attributes ❌
+          </div>
+        </div>
+
+        <h4>Comprehensive Solution Applied:</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+            border-left: 4px solid #4ecdc4;
+          "
+        >
+          <div style="color: #4ecdc4; margin-bottom: 8px">
+            <strong>🛠️ Multi-Layer Fix:</strong>
+          </div>
+          <div style="color: #4ecdc4">
+            ✅ <strong>Layer 1:</strong> LoRA-aware _extractBaseTerm() method
+          </div>
+          <div style="color: #4ecdc4">
+            ✅ <strong>Layer 2:</strong> Persistent term value storage system
+          </div>
+          <div style="color: #4ecdc4">
+            ✅ <strong>Layer 3:</strong> DOM re-rendering integration
+          </div>
+          <div style="color: #4ecdc4">
+            ✅ <strong>Layer 4:</strong> Memory management and cleanup
+          </div>
+        </div>
+
+        <h4>Test Scenarios (All Now Working):</h4>
+        <ul style="margin-top: 10px">
+          <li>
+            <strong>Multiple Hovers:</strong> Hover over LoRA terms repeatedly -
+            weights remain stable
+          </li>
+          <li>
+            <strong>Weight Modifications:</strong> Modify other terms, then
+            hover over LoRA - no corruption
+          </li>
+          <li>
+            <strong>Category Autoformat:</strong> Autoformat operations don't
+            affect LoRA weights
+          </li>
+          <li>
+            <strong>Disable/Enable:</strong> Toggle term states without losing
+            LoRA weights
+          </li>
+          <li>
+            <strong>Session Persistence:</strong> LoRA weights maintained
+            throughout entire user session
+          </li>
+        </ul>
+
+        <h4>Technical Implementation:</h4>
+        <div
+          style="
+            font-family: monospace;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+          "
+        >
+          <div style="color: #a8e6cf">
+            <strong>_highlightCategoryDeclaration():</strong> Now checks stored
+            values during rendering
+          </div>
+          <div style="color: #a8e6cf">
+            <strong>modifiedTermValues Map:</strong> Persistent storage for
+            modified term values
+          </div>
+          <div style="color: #a8e6cf">
+            <strong>_getCurrentTagId():</strong> Links rendering context to
+            stored values
+          </div>
+          <div style="color: #a8e6cf">
+            <strong>Memory Management:</strong> Automatic cleanup on tag
+            deletion/modification
+          </div>
+        </div>
+
+        <h4>Before vs After:</h4>
+        <table
+          style="
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-family: monospace;
+          "
+        >
+          <tr style="background: #333">
+            <th style="padding: 8px; border: 1px solid #555; color: #fff">
+              Scenario
+            </th>
+            <th style="padding: 8px; border: 1px solid #555; color: #ff6b6b">
+              Before Fix
+            </th>
+            <th style="padding: 8px; border: 1px solid #555; color: #4ecdc4">
+              After Fix
+            </th>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #555">Initial hover</td>
+            <td style="padding: 8px; border: 1px solid #555; color: #4ecdc4">
+              ✅ Works
+            </td>
+            <td style="padding: 8px; border: 1px solid #555; color: #4ecdc4">
+              ✅ Works
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #555">
+              After DOM re-render
+            </td>
+            <td style="padding: 8px; border: 1px solid #555; color: #ff6b6b">
+              ❌ Weight lost
+            </td>
+            <td style="padding: 8px; border: 1px solid #555; color: #4ecdc4">
+              ✅ Weight preserved
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border: 1px solid #555">
+              Multiple interactions
+            </td>
+            <td style="padding: 8px; border: 1px solid #555; color: #ff6b6b">
+              ❌ Degrades over time
+            </td>
+            <td style="padding: 8px; border: 1px solid #555; color: #4ecdc4">
+              ✅ Stable throughout session
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
 

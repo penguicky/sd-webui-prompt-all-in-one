@@ -1661,6 +1661,15 @@ export default {
               value = formattedValue;
             }
           }
+
+          // Filter out disabled terms from category declarations
+          value = this._filterDisabledCategoryTerms(value);
+
+          // Skip this tag if the filtered value is empty (all terms were disabled)
+          if (value === "") {
+            return;
+          }
+
           let localValue = common.replaceTag(tag.localValue);
           if (localValue !== tag.localValue) {
             tag.localValue = localValue;
@@ -2616,6 +2625,46 @@ export default {
       }
 
       return formattedValue;
+    },
+
+    // Filter out disabled terms from category declarations during prompt generation
+    _filterDisabledCategoryTerms(value) {
+      // Check if this is a category declaration
+      const categoryRegex = /^{([^:}]+):\s*([^}]+)}$/;
+      const match = value.match(categoryRegex);
+
+      if (!match) {
+        return value; // Not a category declaration, return unchanged
+      }
+
+      const [, categoryName, termsStr] = match;
+
+      // Check if this is actually weight syntax (numeric value after colon)
+      const isWeightSyntax = /^\s*\-?[0-9\.]+\s*$/.test(termsStr);
+      if (isWeightSyntax) {
+        return value; // This is weight syntax, not a category declaration
+      }
+
+      // Parse and filter out disabled terms
+      const terms = termsStr.split(",").map((term) => term.trim());
+      const enabledTerms = terms.filter((term) => {
+        // Check if the term is disabled (wrapped in [])
+        const isDisabled = term.startsWith("[") && term.endsWith("]");
+        return !isDisabled;
+      });
+
+      // If no enabled terms remain, return empty string to exclude the entire category
+      if (enabledTerms.length === 0) {
+        return "";
+      }
+
+      // If all terms are enabled, return original value
+      if (enabledTerms.length === terms.length) {
+        return value;
+      }
+
+      // Reconstruct the category declaration with only enabled terms
+      return `{${categoryName}: ${enabledTerms.join(", ")}}`;
     },
   },
 };

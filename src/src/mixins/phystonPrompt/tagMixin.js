@@ -336,7 +336,17 @@ export default {
         const terms = termsStr.split(",").map((term) => term.trim());
 
         for (let i = 0; i < terms.length; i++) {
-          const term = terms[i];
+          let term = terms[i];
+
+          // CRITICAL FIX: Check if we have a stored modified value for this term
+          // This prevents LoRA weight loss after DOM re-rendering
+          const storedValue = this._getStoredModifiedTermValue(
+            this._getCurrentTagId(value),
+            i
+          );
+          if (storedValue) {
+            term = storedValue;
+          }
 
           if (i > 0) {
             result += ",";
@@ -790,6 +800,10 @@ export default {
     onDeleteTagClick(id) {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return false;
+
+      // Clear any stored modified term values for this tag
+      this._clearAllStoredModifiedTermValues(id);
+
       let index = this.tags.indexOf(tag);
       this.tags.splice(index, 1);
       this.updateTags();
@@ -1319,8 +1333,15 @@ export default {
       // Remove the term at the specified index
       terms.splice(termIndex, 1);
 
+      // Clear the stored modified value for the deleted term
+      this._clearStoredModifiedTermValue(tag.id, termIndex);
+
+      // Shift down stored values for terms after the deleted one
+      this._shiftStoredModifiedTermValues(tag.id, termIndex, terms.length + 1);
+
       // If no terms left, delete the entire tag
       if (terms.length === 0) {
+        this._clearAllStoredModifiedTermValues(tag.id);
         const tagIndex = this.tags.indexOf(tag);
         this.tags.splice(tagIndex, 1);
         this.showExtendId = "";
@@ -1394,10 +1415,16 @@ export default {
       // Remove weight brackets and colon syntax
       let baseTerm = term;
 
+      // CRITICAL FIX: Don't process LoRA/LyCO syntax as it has internal colons
+      // LoRA syntax like <lora:name:1.2> should not be treated as weight syntax
+      if (baseTerm.match(/^<(lora|lyco):[^>]+>$/)) {
+        return baseTerm; // Return LoRA terms unchanged
+      }
+
       // Remove outer weight brackets: (term), [term], {term}
       baseTerm = baseTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
 
-      // Remove colon weight syntax: term:1.2
+      // Remove colon weight syntax: term:1.2 (but not for LoRA terms)
       baseTerm = baseTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
 
       return baseTerm.trim();
@@ -1407,10 +1434,16 @@ export default {
     _removeWeightSyntax(term) {
       let cleanTerm = term;
 
+      // CRITICAL FIX: Don't process LoRA/LyCO syntax as it has internal colons
+      // LoRA syntax like <lora:name:1.2> should not be treated as weight syntax
+      if (cleanTerm.match(/^<(lora|lyco):[^>]+>$/)) {
+        return cleanTerm; // Return LoRA terms unchanged
+      }
+
       // Remove outer weight brackets: (term), [term], {term}
       cleanTerm = cleanTerm.replace(/^[\(\[\{](.+)[\)\]\}]$/, "$1");
 
-      // Remove colon weight syntax: term:1.2
+      // Remove colon weight syntax: term:1.2 (but not for LoRA terms)
       cleanTerm = cleanTerm.replace(/^(.+):\-?[0-9\.]+$/, "$1");
 
       return cleanTerm.trim();
@@ -1421,6 +1454,14 @@ export default {
       const div = document.createElement("div");
       div.innerHTML = str;
       return div.textContent || div.innerText || "";
+    },
+
+    // Helper function to get the current tag ID during rendering
+    // This is used to look up stored modified term values during DOM re-rendering
+    _getCurrentTagId(categoryValue) {
+      // Find the tag that matches this category value
+      const tag = this.tags.find((t) => t.value === categoryValue);
+      return tag ? tag.id : null;
     },
 
     // Critical fix: Store modified term values persistently
@@ -1452,6 +1493,54 @@ export default {
 
       const key = `${tagId}-${termIndex}`;
       this.modifiedTermValues.delete(key);
+    },
+
+    // Clear all stored modified term values for a specific tag
+    _clearAllStoredModifiedTermValues(tagId) {
+      if (!this.modifiedTermValues) {
+        return;
+      }
+
+      // Find and delete all keys that start with this tagId
+      const keysToDelete = [];
+      for (const key of this.modifiedTermValues.keys()) {
+        if (key.startsWith(`${tagId}-`)) {
+          keysToDelete.push(key);
+        }
+      }
+
+      keysToDelete.forEach((key) => {
+        this.modifiedTermValues.delete(key);
+      });
+    },
+
+    // Shift stored modified term values when a term is deleted
+    _shiftStoredModifiedTermValues(tagId, deletedIndex, originalLength) {
+      if (!this.modifiedTermValues) {
+        return;
+      }
+
+      // Create a temporary map to store shifted values
+      const shiftedValues = new Map();
+
+      // Find all keys for this tag and shift indices down
+      for (const [key, value] of this.modifiedTermValues.entries()) {
+        if (key.startsWith(`${tagId}-`)) {
+          const termIndex = parseInt(key.split("-")[1]);
+
+          if (termIndex > deletedIndex) {
+            // Shift this index down by 1
+            const newKey = `${tagId}-${termIndex - 1}`;
+            shiftedValues.set(newKey, value);
+            this.modifiedTermValues.delete(key);
+          }
+        }
+      }
+
+      // Add the shifted values back
+      for (const [key, value] of shiftedValues.entries()) {
+        this.modifiedTermValues.set(key, value);
+      }
     },
 
     // Critical fix: Synchronize DOM attribute with modified term value
