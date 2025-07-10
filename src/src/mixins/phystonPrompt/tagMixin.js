@@ -9,6 +9,7 @@ export default {
       categoryTermHoverData: null, // Store data about the hovered category term
       extendMenuMouseIn: false, // Track if mouse is in the extend menu
       extendMenuHideTimer: null, // Timer for delayed menu hiding
+      modifiedTermValues: new Map(), // CRITICAL FIX: Store modified term values persistently in reactive data
     };
   },
   mounted() {
@@ -340,12 +341,12 @@ export default {
 
           // CRITICAL FIX: Check if we have a stored modified value for this term
           // This prevents LoRA weight loss after DOM re-rendering
-          const storedValue = this._getStoredModifiedTermValue(
-            this._getCurrentTagId(value),
-            i
-          );
-          if (storedValue) {
-            term = storedValue;
+          const tagId = this._getCurrentTagId(value);
+          if (tagId) {
+            const storedValue = this._getStoredModifiedTermValue(tagId, i);
+            if (storedValue) {
+              term = storedValue;
+            }
           }
 
           if (i > 0) {
@@ -1087,10 +1088,12 @@ export default {
         }
 
         // Store category term hover data with position information
-        // Unescape HTML entities from the term value
-        const unescapedTermValue = finalTermValue
-          ? this._unescapeHtml(finalTermValue)
-          : finalTermValue;
+        // CRITICAL FIX: Only unescape if the value is actually HTML-encoded
+        // This prevents unnecessary DOM operations during hover events
+        let unescapedTermValue = finalTermValue;
+        if (finalTermValue && finalTermValue.includes("&")) {
+          unescapedTermValue = this._unescapeHtml(finalTermValue);
+        }
 
         this.categoryTermHoverData = {
           tagId: tagId,
@@ -1450,10 +1453,13 @@ export default {
     },
 
     // Helper function to unescape HTML entities
+    // CRITICAL FIX: Use string-based approach instead of DOM manipulation
+    // This prevents the creation of 83+ DOM elements during hover events
     _unescapeHtml(str) {
-      const div = document.createElement("div");
-      div.innerHTML = str;
-      return div.textContent || div.innerText || "";
+      if (!str) return str;
+
+      // Use the common utility method that doesn't create DOM elements
+      return common.unescapeHtml(str);
     },
 
     // Helper function to get the current tag ID during rendering
@@ -1467,20 +1473,12 @@ export default {
     // Critical fix: Store modified term values persistently
     // This prevents LoRA weight loss by maintaining modified values across hover events
     _storeModifiedTermValue(tagId, termIndex, termValue) {
-      if (!this.modifiedTermValues) {
-        this.modifiedTermValues = new Map();
-      }
-
       const key = `${tagId}-${termIndex}`;
       this.modifiedTermValues.set(key, termValue);
     },
 
     // Get stored modified term value
     _getStoredModifiedTermValue(tagId, termIndex) {
-      if (!this.modifiedTermValues) {
-        return null;
-      }
-
       const key = `${tagId}-${termIndex}`;
       return this.modifiedTermValues.get(key);
     },
@@ -1497,10 +1495,6 @@ export default {
 
     // Clear all stored modified term values for a specific tag
     _clearAllStoredModifiedTermValues(tagId) {
-      if (!this.modifiedTermValues) {
-        return;
-      }
-
       // Find and delete all keys that start with this tagId
       const keysToDelete = [];
       for (const key of this.modifiedTermValues.keys()) {

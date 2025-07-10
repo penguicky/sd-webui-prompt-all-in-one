@@ -1426,9 +1426,6 @@ export default {
   watch: {
     loras: {
       handler() {
-        console.log(
-          "🎨 TAGS: LoRA list updated, refreshing tag classes and colors..."
-        );
         this.tags.forEach((tag) => {
           this._setTagClass(tag);
         });
@@ -1441,9 +1438,6 @@ export default {
     },
     lycos: {
       handler() {
-        console.log(
-          "🎨 TAGS: LyCORIS list updated, refreshing tag classes and colors..."
-        );
         this.tags.forEach((tag) => {
           this._setTagClass(tag);
         });
@@ -1456,9 +1450,6 @@ export default {
     },
     embeddings: {
       handler() {
-        console.log(
-          "🎨 TAGS: Embeddings list updated, refreshing tag classes and colors..."
-        );
         this.tags.forEach((tag) => {
           this._setTagClass(tag);
         });
@@ -2382,12 +2373,7 @@ export default {
 
     refreshTags() {
       // Force re-render of all tags to apply new colors (SAFE VERSION)
-      // PRODUCTION-SAFE DEBUG: Always log tag refresh
-      console.log(
-        "🎨 TAGS: Refreshing",
-        this.tags.length,
-        "tags for color changes..."
-      );
+      // Force re-render of all tags to apply new colors
 
       // ENHANCED APPROACH: Force comprehensive tag style updates
       if (process.env.NODE_ENV === "development") {
@@ -2430,11 +2416,6 @@ export default {
       // Apply custom colors directly to tag elements
       this.$nextTick(() => {
         const tagElements = this.$el.querySelectorAll(".prompt-tag-value");
-        console.log(
-          "🎨 TAGS: Applying custom colors to",
-          tagElements.length,
-          "tag elements"
-        );
 
         // Get current custom colors from parent (App.vue)
         const customColors = this.$parent.syntaxHighlightingColors || {
@@ -2451,25 +2432,16 @@ export default {
           // Apply colors directly to elements based on their classes
           if (el.classList.contains("embedding-tag")) {
             el.style.setProperty("color", customColors.embeddings, "important");
-            console.log(
-              "🎨 TAGS: Applied embedding color:",
-              customColors.embeddings
-            );
           } else if (
             el.classList.contains("lora-tag") ||
             el.classList.contains("lyco-tag")
           ) {
             el.style.setProperty("color", customColors.loraNames, "important");
-            console.log("🎨 TAGS: Applied LoRA color:", customColors.loraNames);
           } else if (el.classList.contains("regular-tag")) {
             el.style.setProperty(
               "color",
               customColors.regularTerms,
               "important"
-            );
-            console.log(
-              "🎨 TAGS: Applied regular color:",
-              customColors.regularTerms
             );
           }
 

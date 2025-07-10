@@ -269,18 +269,13 @@ export default {
     },
 
     onColorChange() {
-      // PRODUCTION-SAFE DEBUG: Always log color changes
-      console.log(
-        "🎨 SETTINGS: Color changed, applying updates...",
-        this.localColors
-      );
+      // Apply colors in real-time for immediate preview and live updates
 
       // Apply colors in real-time for immediate preview and live updates
       this.applyColorsToCSS();
 
       // Emit the color changes immediately to parent for real-time application
       this.$emit("update:colors", { ...this.localColors });
-      console.log("🎨 SETTINGS: Emitted color update to parent");
 
       // Force immediate visual update of the preview
       this.$forceUpdate();

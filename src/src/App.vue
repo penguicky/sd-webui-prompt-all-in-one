@@ -1486,9 +1486,6 @@ export default {
       this.$refs.chatgptPrompt.open();
     },
     onUpdateSyntaxHighlightingColors(colors) {
-      // PRODUCTION-SAFE DEBUG: Always log color updates
-      console.log("🎨 SYNTAX HIGHLIGHTING: Received color update:", colors);
-
       this.syntaxHighlightingColors = { ...colors };
 
       // Apply colors immediately without waiting for persistence
@@ -1602,78 +1599,10 @@ export default {
         "important"
       );
 
-      // PRODUCTION-SAFE DEBUG: Always log color application
-      console.log(
-        "🎨 SYNTAX HIGHLIGHTING: Applied colors:",
-        this.syntaxHighlightingColors
-      );
-
-      // Debug: Check if CSS custom properties are actually set
+      // Apply CSS custom properties
       const rootElement = document.documentElement;
-      console.log("🎨 CSS Custom Properties Check:");
-      console.log(
-        "  --syntax-highlight-embeddings:",
-        rootElement.style.getPropertyValue("--syntax-highlight-embeddings")
-      );
-      console.log(
-        "  --syntax-highlight-lora-names:",
-        rootElement.style.getPropertyValue("--syntax-highlight-lora-names")
-      );
-      console.log(
-        "  --syntax-highlight-regular-terms:",
-        rootElement.style.getPropertyValue("--syntax-highlight-regular-terms")
-      );
 
-      // Debug: Check intermediate CSS custom properties
-      console.log("🎨 Intermediate CSS Properties Check:");
-      console.log(
-        "  --pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueEmbeddingTag-color:",
-        rootElement.style.getPropertyValue(
-          "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueEmbeddingTag-color"
-        )
-      );
-      console.log(
-        "  --pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueLoraTag-color:",
-        rootElement.style.getPropertyValue(
-          "--pp-pt-dsb-ptl-pt-ptm-pte-promptTagValueLoraTag-color"
-        )
-      );
-
-      // Debug: Check computed styles on actual tag elements
-      setTimeout(() => {
-        const tagElements = document.querySelectorAll(".prompt-tag-value");
-        console.log(
-          "🎨 Found",
-          tagElements.length,
-          "tag elements for style inspection"
-        );
-
-        tagElements.forEach((el, index) => {
-          if (index < 3) {
-            // Only log first 3 for brevity
-            const computedStyle = window.getComputedStyle(el);
-            console.log(`🎨 Tag ${index} classes:`, el.className);
-            console.log(`🎨 Tag ${index} computed color:`, computedStyle.color);
-            console.log(
-              `🎨 Tag ${index} expected color:`,
-              el.classList.contains("embedding-tag")
-                ? this.syntaxHighlightingColors.embeddings
-                : el.classList.contains("lora-tag")
-                ? this.syntaxHighlightingColors.loraNames
-                : el.classList.contains("regular-tag")
-                ? this.syntaxHighlightingColors.regularTerms
-                : "unknown"
-            );
-            console.log(
-              `🎨 Tag ${index} innerHTML:`,
-              el.innerHTML.substring(0, 50) + "..."
-            );
-          }
-        });
-      }, 100);
-
-      // Force immediate re-rendering using SAFE approach
-      console.log("🎨 SYNTAX HIGHLIGHTING: Applying color updates safely...");
+      // Force immediate re-rendering
 
       // Single immediate update
       this.forceImmediateColorUpdates();
@@ -1714,11 +1643,6 @@ export default {
       // 4. Additional step: Force re-render of any visible tag elements with direct color application
       this.$nextTick(() => {
         const tagElements = document.querySelectorAll(".prompt-tag-value");
-        console.log(
-          "🎨 Applying direct colors to",
-          tagElements.length,
-          "tag elements"
-        );
 
         tagElements.forEach((el) => {
           // Apply colors directly to elements as a fallback
@@ -1727,10 +1651,6 @@ export default {
               "color",
               this.syntaxHighlightingColors.embeddings,
               "important"
-            );
-            console.log(
-              "🎨 Applied embedding color directly:",
-              this.syntaxHighlightingColors.embeddings
             );
           } else if (
             el.classList.contains("lora-tag") ||
@@ -1741,19 +1661,11 @@ export default {
               this.syntaxHighlightingColors.loraNames,
               "important"
             );
-            console.log(
-              "🎨 Applied LoRA color directly:",
-              this.syntaxHighlightingColors.loraNames
-            );
           } else if (el.classList.contains("regular-tag")) {
             el.style.setProperty(
               "color",
               this.syntaxHighlightingColors.regularTerms,
               "important"
-            );
-            console.log(
-              "🎨 Applied regular color directly:",
-              this.syntaxHighlightingColors.regularTerms
             );
           }
 
