@@ -326,6 +326,48 @@
     </div>
 
     <div class="test-section">
+      <h2>Test 9: Critical Regression Fix - LoRA Weight Persistence</h2>
+      <p>
+        Expected: LoRA terms should maintain their modified weight values
+        through subsequent hover events
+      </p>
+      <div class="test-prompt">
+        <span class="weight-punctuation">{</span
+        ><span class="category-name">models</span
+        ><span class="weight-punctuation">:</span>
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-9-0"
+          data-term-value="(realistic_vision:0.9)"
+          data-term-index="0"
+          ><span class="weight-punctuation">(</span
+          ><span class="character">realistic_vision</span
+          ><span class="weight-punctuation">:</span
+          ><span class="weight-value-reduce">0.9</span
+          ><span class="weight-punctuation">)</span></span
+        >,
+        <span
+          class="category-term-wrapper"
+          data-term-id="test-9-1"
+          data-term-value="&lt;lora:detailed_face:1.3&gt;"
+          data-term-index="1"
+          ><span class="weight-punctuation">&lt;</span
+          ><span class="lora-content">lora:detailed_face:1.3</span
+          ><span class="weight-punctuation">&gt;</span></span
+        >
+        <span class="weight-punctuation">}</span>
+      </div>
+      <p>
+        <small
+          >Critical Test: After modifying the LoRA weight (e.g., from 1.3 to
+          1.5), subsequent hover events should preserve the new weight value
+          (1.5) and not revert to the original (1.3) or lose the weight
+          entirely.</small
+        >
+      </p>
+    </div>
+
+    <div class="test-section">
       <h2>Instructions for Testing (Updated Integration)</h2>
       <ol>
         <li>
@@ -459,6 +501,29 @@
         <li>
           🔍 <strong>Improved Hover Data Handling:</strong> Enhanced term value
           processing to maintain original LoRA syntax during hover interactions
+        </li>
+      </ul>
+
+      <h3>Critical Regression Fix</h3>
+      <ul>
+        <li>
+          🚨 <strong>Fixed LoRA Weight Persistence Regression:</strong> LoRA
+          terms now maintain their modified weight values through subsequent
+          hover events
+        </li>
+        <li>
+          🔧 <strong>Enhanced DOM Attribute Synchronization:</strong> Added
+          _updateCategoryTermAttribute() method to explicitly update
+          data-term-value attributes after weight modifications
+        </li>
+        <li>
+          ⚡ <strong>Improved DOM Update Timing:</strong> Ensured DOM attributes
+          are updated before listener re-setup to prevent stale data issues
+        </li>
+        <li>
+          🔍 <strong>Enhanced Hover Data Consistency:</strong> Synchronized
+          categoryTermHoverData with actual DOM attributes to prevent value
+          mismatches
         </li>
       </ul>
 

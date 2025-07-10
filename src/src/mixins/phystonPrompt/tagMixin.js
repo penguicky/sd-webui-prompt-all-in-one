@@ -1188,6 +1188,9 @@ export default {
 
       // Force re-render to ensure syntax highlighting is updated
       this.$nextTick(() => {
+        // Update the DOM attribute for the specific term to ensure consistency
+        this._updateCategoryTermAttribute(tag.id, termIndex, modifiedTerm);
+
         // Force custom colors to be applied if available
         if (this._applyCustomColorsToTags) {
           this._applyCustomColorsToTags();
@@ -1230,6 +1233,34 @@ export default {
       const div = document.createElement("div");
       div.innerHTML = str;
       return div.textContent || div.innerText || "";
+    },
+
+    // Helper function to update DOM attribute for a specific category term
+    _updateCategoryTermAttribute(tagId, termIndex, newTermValue) {
+      // Find the tag element in the DOM
+      const tagElement = this.$el.querySelector(`[data-id="${tagId}"]`);
+      if (!tagElement) return;
+
+      // Find the specific term wrapper within the tag
+      const termWrapper = tagElement.querySelector(
+        `.category-term-wrapper[data-term-index="${termIndex}"]`
+      );
+      if (!termWrapper) return;
+
+      // Update the data-term-value attribute with the new value
+      termWrapper.setAttribute(
+        "data-term-value",
+        common.escapeHtml(newTermValue)
+      );
+
+      // Also update the hover data if it matches this term
+      if (
+        this.categoryTermHoverData &&
+        this.categoryTermHoverData.tag.id === tagId &&
+        this.categoryTermHoverData.termIndex === termIndex
+      ) {
+        this.categoryTermHoverData.termValue = newTermValue;
+      }
     },
 
     // Helper function to modify LoRA weight syntax properly
