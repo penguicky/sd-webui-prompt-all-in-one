@@ -17,7 +17,10 @@
         :favorite-key="item.favoriteKey"
         @refresh-favorites="onRefreshFavorites"
         @click:show-favorite="onShowFavorite(item.id, $event)"
-
+        v-model:can-one-translate="canOneTranslate"
+        v-model:auto-translate="autoTranslate"
+        v-model:auto-translate-to-english="autoTranslateToEnglish"
+        v-model:auto-translate-to-local="autoTranslateToLocal"
         v-model:auto-remove-space="autoRemoveSpace"
         v-model:auto-remove-last-comma="autoRemoveLastComma"
         v-model:auto-keep-weight-zero="autoKeepWeightZero"
@@ -44,7 +47,9 @@
         @update:hide-panel="onUpdateHidePanel(item.id, $event)"
         v-model:enable-tooltip="enableTooltip"
         v-model:enable-native-highlighting="enableNativeHighlighting"
-
+        v-model:translate-api="translateApi"
+        :translate-api-config="translateApiConfig"
+        @click:translate-api="onTranslateApiClick"
         @click:prompt-format="onPromptFormatClick"
         @click:blacklist="onBlacklistClick"
         @click:hotkey="onHotkeyClick"
@@ -54,7 +59,7 @@
         v-model:group-tags-translate="groupTagsTranslate"
         @click:select-language="onSelectLanguageClick"
         @click:select-theme="onSelectThemeClick"
-
+        @click:show-chatgpt="onShowChatgpt(item.id, $event)"
         :extra-networks="extraNetworks"
         :loras="loras"
         :lycos="lycos"
@@ -82,7 +87,17 @@
         @refresh-extra-networks="onRefreshExtraNetworks"
       ></physton-prompt>
     </template>
-
+    <translate-setting
+      ref="translateSetting"
+      v-model:language-code="languageCode"
+      :translate-apis="translateApis"
+      :languages="languages"
+      @forceUpdate:translateApi="updateTranslateApiConfig"
+      v-model:tag-complete-file="tagCompleteFile"
+      v-model:only-csv-on-auto="onlyCsvOnAuto"
+      v-model:group-tags-translate="groupTagsTranslate"
+      v-model:translate-api="translateApi"
+    ></translate-setting>
     <select-language
       ref="selectLanguage"
       v-model:language-code="languageCode"
@@ -161,7 +176,13 @@
       :packages-state="packagesState"
       :python="python"
     />
-
+    <chatgpt-prompt
+      ref="chatgptPrompt"
+      v-model:language-code="languageCode"
+      :translate-apis="translateApis"
+      :languages="languages"
+      @use="onUseChatgpt"
+    />
     <about
       ref="about"
       v-model:language-code="languageCode"
@@ -230,7 +251,7 @@
 
 <script>
 import PhystonPrompt from "./components/phystonPrompt.vue";
-
+import TranslateSetting from "@/components/translateSetting.vue";
 import common from "@/utils/common";
 import SelectLanguage from "@/components/selectLanguage.vue";
 import Favorite from "@/components/favorite.vue";
@@ -240,7 +261,7 @@ import ExtensionCss from "@/components/extensionCss.vue";
 import PromptFormat from "@/components/promptFormat.vue";
 import Blacklist from "@/components/blacklist.vue";
 import PackagesState from "@/components/packagesState.vue";
-
+import ChatgptPrompt from "@/components/chatgptPrompt.vue";
 import About from "@/components/about.vue";
 import globals from "../globals";
 import jsYaml from "js-yaml";
@@ -256,7 +277,7 @@ export default {
   components: {
     Hotkey,
     About,
-
+    ChatgptPrompt,
     PackagesState,
     PromptFormat,
     Blacklist,
@@ -265,7 +286,7 @@ export default {
     History,
     Favorite,
     SelectLanguage,
-
+    TranslateSetting,
     PhystonPrompt,
     ExtraNetworksPopup,
     NativeHighlightManager,
@@ -405,7 +426,7 @@ export default {
 
       historyCurrentPrompt: "",
       favoriteCurrentPrompt: "",
-
+      chatgptCurrentPrompt: "",
 
       extraNetworks: [],
       loras: [],
@@ -1042,7 +1063,7 @@ export default {
         if (data.tagCompleteFile !== null) {
           this.tagCompleteFile = data.tagCompleteFile;
           waitTick.addWaitTick(() => {
-
+            this.$refs.translateSetting.getCSV(this.tagCompleteFile);
           });
         } else {
           /*if (typeof TAC_CFG === 'object' && typeof QUEUE_FILE_LOAD === 'object') {
@@ -1050,7 +1071,7 @@ export default {
                             if (typeof TAC_CFG.translation !== 'object' || typeof TAC_CFG.translation.translationFile !== 'string') return
                             if (!TAC_CFG.translation.translationFile) return
                             this.tagCompleteFile = '\\extensions\\a1111-sd-webui-tagcomplete\\tags\\' + TAC_CFG.translation.translationFile
-
+                            this.$refs.translateSetting.getCSV(this.tagCompleteFile)
                         })
                     }*/
         }
@@ -1160,11 +1181,11 @@ export default {
 
         // todo: test
         // this.$refs.about.open()
-
+        // this.$refs.chatgptPrompt.open()
         // this.$refs.promptFormat.open()
         // this.$refs.blacklist.open()
         // this.$refs.hotkey.open()
-
+        // this.$refs.translateSetting.open(this.translateApi)
         /*this.$refs.extraNetworksPopup.show({
                     getBoundingClientRect: () => {
                         return {
@@ -1304,7 +1325,9 @@ export default {
     onSelectLanguageClick(e) {
       this.$refs.selectLanguage.open(e);
     },
-
+    onTranslateApiClick() {
+      this.$refs.translateSetting.open(this.translateApi);
+    },
     onSelectThemeClick() {
       this.$refs.extensionCss.open();
     },
@@ -1456,7 +1479,12 @@ export default {
     onRefreshFavorites(key) {
       this.$refs.favorite.getFavorites(key);
     },
-
+    onShowChatgpt(id, e) {
+      this.chatgptCurrentPrompt = id;
+      const item = this.prompts.find((item) => item.id == id);
+      if (!item) return;
+      this.$refs.chatgptPrompt.open();
+    },
     onUpdateSyntaxHighlightingColors(colors) {
       this.syntaxHighlightingColors = { ...colors };
 
@@ -1646,7 +1674,14 @@ export default {
         });
       });
     },
-
+    onUseChatgpt(prompt) {
+      if (!this.chatgptCurrentPrompt) return;
+      const item = this.prompts.find(
+        (item) => item.id == this.chatgptCurrentPrompt
+      );
+      if (!item) return;
+      this.$refs[item.id][0].useChatgpt(prompt);
+    },
     onShowAbout() {
       this.$refs.about.open();
     },

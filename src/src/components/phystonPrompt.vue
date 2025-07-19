@@ -41,7 +41,16 @@
                   v-animate="'fadeIn'"
                   @mouseenter="onSettingBoxMouseEnter"
                 >
-
+                  <div
+                    v-if="translateApiItem.name && !isEnglish"
+                    class="extend-btn-item"
+                    v-tooltip="
+                      getLang('translate_api') + ': ' + translateApiItem.name
+                    "
+                    @click="$emit('click:translateApi', $event)"
+                  >
+                    <icon-svg class="hover-scale-120" name="api" />
+                  </div>
                   <div
                     class="extend-btn-item"
                     v-tooltip="getLang('prompt_format')"
@@ -106,7 +115,67 @@
                   >
                     <icon-svg class="hover-scale-120" name="about" />
                   </div>
-
+                  <template v-if="!isEnglish">
+                    <template v-if="canOneTranslate">
+                      <div class="gradio-checkbox hover-scale-120">
+                        <label v-tooltip="getLang('auto_translate')">
+                          <input
+                            type="checkbox"
+                            name="auto_translate"
+                            value="1"
+                            :checked="autoTranslate"
+                            @change="
+                              $emit(
+                                'update:autoTranslate',
+                                $event.target.checked
+                              )
+                            "
+                          />
+                          <icon-svg name="translate" />
+                        </label>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div class="gradio-checkbox hover-scale-120">
+                        <label
+                          v-tooltip="
+                            getLang('auto_translate_to_local_language')
+                          "
+                        >
+                          <input
+                            type="checkbox"
+                            name="auto_translate_to_local_language"
+                            value="1"
+                            :checked="autoTranslateToLocal"
+                            @change="
+                              $emit(
+                                'update:autoTranslateToLocal',
+                                $event.target.checked
+                              )
+                            "
+                          />
+                          <icon-svg name="translate" />
+                        </label>
+                      </div>
+                      <div class="gradio-checkbox hover-scale-120">
+                        <label v-tooltip="getLang('auto_translate_to_english')">
+                          <input
+                            type="checkbox"
+                            name="auto_translate_to_english"
+                            value="1"
+                            :checked="autoTranslateToEnglish"
+                            @change="
+                              $emit(
+                                'update:autoTranslateToEnglish',
+                                $event.target.checked
+                              )
+                            "
+                          />
+                          <icon-svg name="english" />
+                        </label>
+                      </div>
+                    </template>
+                  </template>
                   <!--<div class="gradio-checkbox hover-scale-120">
                                         <label v-tooltip="getLang('is_remove_space')">
                                             <input type="checkbox" name="auto_remove_space" value="1"
@@ -208,7 +277,66 @@
             </div>
           </div>
         </div>
-
+        <template v-if="!isEnglish">
+          <div class="prompt-header-extend">
+            <div class="extend-content">
+              <div class="extend-btn-group">
+                <template v-if="canOneTranslate">
+                  <div
+                    class="extend-btn-item"
+                    v-tooltip="getLang('one_translate_all_keywords')"
+                    @click="onTranslatesToLocalClick"
+                  >
+                    <icon-svg
+                      v-if="!loading['all_local']"
+                      class="hover-scale-120"
+                      name="translate"
+                    />
+                    <icon-svg
+                      v-if="loading['all_local']"
+                      class="hover-scale-120"
+                      name="loading"
+                    />
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    class="extend-btn-item"
+                    v-tooltip="getLang('translate_keywords_to_local_language')"
+                    @click="onTranslatesToLocalClick"
+                  >
+                    <icon-svg
+                      v-if="!loading['all_local']"
+                      class="hover-scale-120"
+                      name="translate"
+                    />
+                    <icon-svg
+                      v-if="loading['all_local']"
+                      class="hover-scale-120"
+                      name="loading"
+                    />
+                  </div>
+                  <div
+                    class="extend-btn-item"
+                    v-tooltip="getLang('translate_all_keywords_to_english')"
+                    @click="onTranslatesToEnglishClick"
+                  >
+                    <icon-svg
+                      v-if="!loading['all_en']"
+                      class="hover-scale-120"
+                      name="english"
+                    />
+                    <icon-svg
+                      v-if="loading['all_en']"
+                      class="hover-scale-120"
+                      name="loading"
+                    />
+                  </div>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
         <div class="prompt-header-extend">
           <div class="extend-content">
             <div class="extend-btn-group">
@@ -242,7 +370,19 @@
             </div>
           </div>
         </div>
-
+        <div class="prompt-header-extend" v-if="!neg">
+          <div class="extend-content">
+            <div class="extend-btn-group">
+              <div
+                class="extend-btn-item"
+                v-tooltip="getLang('use_chatgpt_gen_prompts')"
+                @click="$emit('click:showChatgpt', $event)"
+              >
+                <icon-svg class="hover-scale-120" name="chatgpt" />
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="prompt-header-extend prompt-append">
           <div class="extend-content">
             <div class="gradio-checkbox hover-scale-120">
@@ -585,7 +725,16 @@
                 >
                   <icon-svg name="wrap" />
                 </button>
-
+                <button
+                  type="button"
+                  name="translate"
+                  v-tooltip="getLang('translate_keyword_to_english')"
+                  v-show="!isEnglish"
+                  @click="onTranslateToEnglishClick(tag.id)"
+                >
+                  <icon-svg v-if="!loading[tag.id + '_en']" name="english" />
+                  <icon-svg v-if="loading[tag.id + '_en']" name="loading" />
+                </button>
                 <button
                   type="button"
                   name="copy"
@@ -651,7 +800,23 @@
                 </button>
               </div>
             </div>
-
+            <div
+              class="prompt-local-language"
+              v-show="!isEnglish && (tag.type === 'text' || !tag.type)"
+            >
+              <div
+                class="translate-to-local hover-scale-120"
+                v-tooltip="getLang('translate_keyword_to_local_language')"
+                @click="onTranslateToLocalClick(tag.id)"
+                @mousedown.stop=""
+                @mousemove.stop=""
+                @mouseup.stop=""
+              >
+                <icon-svg v-if="!loading[tag.id + '_local']" name="translate" />
+                <icon-svg v-if="loading[tag.id + '_local']" name="loading" />
+              </div>
+              <div class="local-language">{{ tag.localValue }}</div>
+            </div>
           </div>
           <div
             v-for="(tag, index) in tags"
@@ -1038,7 +1203,22 @@ export default {
       type: Object,
       required: true,
     },
-
+    canOneTranslate: {
+      type: Boolean,
+      default: false,
+    },
+    autoTranslate: {
+      type: Boolean,
+      default: false,
+    },
+    autoTranslateToEnglish: {
+      type: Boolean,
+      default: false,
+    },
+    autoTranslateToLocal: {
+      type: Boolean,
+      default: false,
+    },
     autoRemoveSpace: {
       type: Boolean,
       default: false,
@@ -1186,7 +1366,9 @@ export default {
   },
   emits: [
     "update:languageCode",
-
+    "update:autoTranslate",
+    "update:autoTranslateToEnglish",
+    "update:autoTranslateToLocal",
     "update:autoRemoveSpace",
     "update:autoRemoveLastComma",
     "update:autoKeepWeightZero",
@@ -1195,7 +1377,8 @@ export default {
     "update:hidePanel",
     "update:enableTooltip",
     "update:enableNativeHighlighting",
-
+    "update:translateApi",
+    "click:translateApi",
     "click:promptFormat",
     "click:blacklist",
     "click:hotkey",
@@ -1207,7 +1390,7 @@ export default {
     "click:showHistory",
     "click:showFavorite",
     "refreshFavorites",
-
+    "click:showChatgpt",
     "update:hideGroupTags",
     "update:groupTagsColor",
     "update:blacklist",
@@ -1236,7 +1419,9 @@ export default {
     isEnglish() {
       return this.languageCode === "en_US";
     },
-
+    translateApiItem() {
+      return common.getTranslateApiItem(this.translateApis, this.translateApi);
+    },
   },
   watch: {
     loras: {
@@ -1401,7 +1586,16 @@ export default {
           if (!find && index !== -1) indexes.push(index);
         }
       }
-      this.updateTags();
+      if (this.autoTranslateToLocal && event) {
+        // 启动了自动翻译到本地语言，并且用户手动触发的
+        let useNetwork = !(this.tagCompleteFile && this.onlyCsvOnAuto);
+        useNetwork = false; // 浪费网络请求，先关闭网络翻译。
+        this.translates(indexes, true, useNetwork).finally(() => {
+          this.updateTags();
+        });
+      } else {
+        this.updateTags();
+      }
     },
     _setTextareaFocus() {
       if (typeof get_uiCurrentTabContent !== "function") return;
@@ -1800,7 +1994,18 @@ export default {
     useFavorite(favorite) {
       this.useHistory(favorite);
     },
-
+    useChatgpt(prompt) {
+      let tags = common.splitTags(
+        prompt,
+        this.autoBreakBeforeWrap,
+        this.autoBreakAfterWrap
+      );
+      this.tags = [];
+      tags.forEach((tag) => {
+        this._appendTag(tag, "", false, -1, "text");
+      });
+      this.updateTags();
+    },
     onPromptMainClick() {
       if (this.autoLoadWebuiPrompt) {
         this.onTextareaChange(true);
@@ -1808,9 +2013,363 @@ export default {
       this._setTextareaFocus();
       this.showExtendId = "";
     },
+    translates(indexes, toLocal = false, useNetwork = true) {
+      return new Promise((resolve, reject) => {
+        if (this.languageCode === "en_US" || this.languageCode === "en_GB") {
+          // 本地语言是英文，不需要翻译
+          resolve();
+          return;
+        }
 
+        let needTranslateTags = [];
 
+        let setLoadings = (tags, loading) => {
+          tags.forEach((tag) => {
+            setLoading(tag, loading);
+          });
+        };
 
+        let setLoading = (tag, loading) => {
+          if (this.canOneTranslate) {
+            this.loading[tag.id + "_local"] = loading;
+            this.loading[tag.id + "_en"] = loading;
+          } else {
+            if (tag.toLocal) {
+              this.loading[tag.id + "_local"] = loading;
+            } else {
+              this.loading[tag.id + "_en"] = loading;
+            }
+          }
+        };
+
+        let setTag = (tag, translateText) => {
+          if (tag.toLocal) {
+            tag.localValue = translateText;
+          } else {
+            tag.localValue = tag.value;
+            tag.value = translateText;
+          }
+          this._setTagById(tag.id, tag.value, tag.localValue);
+        };
+
+        let getTranslateText = (tag) => {
+          if (tag.isLora && tag.loraExists) {
+            return this.getExtraNetworkFullName(tag.loraName, "lora");
+          } else if (tag.isLyco && tag.lycoExists) {
+            return this.getExtraNetworkFullName(tag.lycoName, "lycoris");
+          } else if (tag.isEmbedding) {
+            return this.getExtraNetworkFullName(tag.value, "textual inversion");
+          }
+          return tag.value;
+        };
+
+        // 先过滤掉不需要翻译的标签
+        indexes.forEach((index) => {
+          let tag = this.tags[index];
+          let translateText = getTranslateText(tag);
+          if (translateText !== tag.value) {
+            tag.localValue = translateText;
+            return;
+          }
+          if (!common.canTranslate(tag.value)) {
+            // 不需要翻译
+            return;
+          }
+
+          if (tag.isLora) {
+            if (this.blacklist.translate?.includes(tag.loraName.toLowerCase()))
+              return;
+          } else if (tag.isLyco) {
+            if (this.blacklist.translate?.includes(tag.lycoName.toLowerCase()))
+              return;
+          } else if (tag.isEmbedding) {
+            if (
+              this.blacklist.translate?.includes(
+                tag.embeddingName.toLowerCase()
+              )
+            )
+              return;
+          } else {
+            if (
+              this.blacklist.translate?.includes(
+                tag.originalValue.toLowerCase()
+              )
+            )
+              return;
+          }
+
+          tag.isEnglish = common.isEnglishByLangCode(
+            tag.value,
+            this.languageCode
+          );
+          if (tag.isEnglish === -1) {
+            // 无法检测
+            if (toLocal) {
+              // 翻译到本地语言
+              tag.toLocal = true;
+            } else {
+              // 翻译到英文
+              tag.toLocal = false;
+            }
+          } else if (tag.isEnglish === 0) {
+            // 不是英文
+            if (toLocal) {
+              // 翻译到本地语言
+              // 不是英文，那么 tag.value 就是本地语言
+              if (tag.localValue === "") {
+                // 如果 localValue 为空，那么需要把 value 翻译到英文
+                tag.localValue = tag.value;
+                tag.toLocal = false;
+              } else {
+                // 如果 localValue 不为空，那么先把它们交换一下
+                const value = tag.value;
+                tag.value = tag.localValue;
+                tag.localValue = value;
+              }
+            } else {
+              // 翻译到英文
+              tag.toLocal = false;
+            }
+          } else {
+            // 是英文
+            tag.toLocal = true;
+          }
+          setLoading(tag, true);
+          needTranslateTags.push(tag);
+        });
+
+        const translate = (tags) => {
+          if (tags.length <= 0) {
+            setLoadings(tags, false);
+            resolve();
+            return;
+          }
+          let groups = {};
+          tags.forEach((tag, index) => {
+            let fromLang = tag.toLocal ? "en_US" : this.languageCode;
+            let toLang = tag.toLocal ? this.languageCode : "en_US";
+            let groupKey = fromLang + "." + toLang;
+            if (!groups[groupKey])
+              groups[groupKey] = { fromLang, toLang, tags: [] };
+            groups[groupKey].tags.push(tag);
+          });
+          const translateGroup = () => {
+            let group = groups[Object.keys(groups)[0]];
+            if (!group) {
+              resolve();
+              return;
+            }
+            let texts = group.tags.map((tag) => getTranslateText(tag));
+            this.gradioAPI
+              .translates(
+                texts,
+                group.fromLang,
+                group.toLang,
+                this.translateApi,
+                this.translateApiConfig
+              )
+              .then((res) => {
+                if (res.success) {
+                  let translated_text = res.translated_text;
+                  translated_text.forEach((translateText, index) => {
+                    // 去除最后的 .
+                    translateText = translateText.replace(/\.$/, "").trim();
+                    if (common.isEnglish(translateText)) {
+                      // 如果首字母是大写，转为小写（全部是大写，不转换）
+                      if (translateText !== translateText.toUpperCase()) {
+                        translateText = translateText.toLowerCase();
+                      }
+                    }
+
+                    let tag = group.tags[index];
+                    if (translateText !== "") setTag(tag, translateText);
+                    setLoading(tag, false);
+                  });
+                  delete groups[Object.keys(groups)[0]];
+                  translateGroup();
+                } else {
+                  // 有一个错误，其它的也不继续了
+                  setLoadings(tags, false);
+                  this.$toastr.error(res.message);
+                  reject(res.message);
+                }
+              })
+              .catch((err) => {
+                // 有一个错误，其它的也不继续了
+                setLoadings(tags, false);
+                this.$toastr.error(err.message);
+                reject(err.message);
+              });
+          };
+          translateGroup();
+        };
+
+        let translateByCSV = (tags) => {
+          // 开启了使用tagcomplete翻译
+          console.log(
+            "translateByCSV",
+            tags.map((tag) => tag.value),
+            { useNetwork }
+          );
+          let promises = [];
+          tags.forEach((tag) => {
+            // 是否被括号包裹
+            const splitTag = common.splitTag(tag.value);
+            if (splitTag.value !== tag.value) {
+              tag.value = splitTag.value;
+              tag.splits = splitTag;
+            }
+            if (tag.toLocal) {
+              // 翻译到本地语言
+              promises.push(
+                this.translateToLocalByCSV(
+                  tag.value,
+                  void 0,
+                  void 0,
+                  useNetwork
+                )
+              );
+            } else {
+              // 翻译到英文
+              promises.push(this.translateToEnByCSV(tag.value));
+            }
+          });
+          Promise.all(promises)
+            .then((results) => {
+              let needs = [];
+              results.forEach((result, index) => {
+                let tag = tags[index];
+                if (tag.splits) {
+                  // 如果被括号包裹，还原
+                  tag.value = tag.splits.left + tag.value + tag.splits.right;
+                }
+
+                if (result === "") {
+                  needs.push(tag);
+                } else {
+                  if (tag.splits) {
+                    result = tag.splits.left + result + tag.splits.right;
+                  }
+                  setLoading(tag, false);
+                  setTag(tag, result);
+                }
+              });
+              console.log(
+                "No translated keywords: ",
+                needs.map((tag) => tag.value)
+              );
+              if (useNetwork) {
+                translate(needs);
+              } else {
+                setLoadings(needs, false);
+                resolve();
+              }
+            })
+            .catch((error) => {
+              // 有一个错误，就不翻译了
+              setLoadings(tags, false);
+              this.$toastr.error(error);
+              reject(error);
+            });
+        };
+
+        let translateByGroupTags = (tags) => {
+          // 开启了使用关键词组翻译
+          console.log(
+            "translateByGroupTags",
+            tags.map((tag) => tag.value),
+            { useNetwork }
+          );
+          let promises = [];
+          tags.forEach((tag) => {
+            // 是否被括号包裹
+            const splitTag = common.splitTag(tag.value);
+            if (splitTag.value !== tag.value) {
+              tag.value = splitTag.value;
+              tag.splits = splitTag;
+            }
+            if (tag.toLocal) {
+              // 翻译到本地语言
+              promises.push(
+                this.translateToLocalByGroupTags(tag.value, useNetwork)
+              );
+            } else {
+              // 翻译到英文
+              promises.push(
+                this.translateToEnByGroupTags(tag.value, useNetwork)
+              );
+            }
+          });
+          Promise.allSettled(promises)
+            .then((results) => {
+              let errors = [];
+              let needs = [];
+              results.forEach((result, index) => {
+                let tag = tags[index];
+                if (tag.splits) {
+                  // 如果被括号包裹，还原
+                  tag.value = tag.splits.left + tag.value + tag.splits.right;
+                }
+
+                if (result.status !== "fulfilled") {
+                  errors.push(result.reason);
+                }
+
+                if (!result.value?.length || result.status !== "fulfilled") {
+                  needs.push(tag);
+                } else {
+                  if (tag.splits) {
+                    result.value =
+                      tag.splits.left + result.value + tag.splits.right;
+                  }
+                  setLoading(tag, false);
+                  setTag(tag, result.value);
+                }
+              });
+              console.log(
+                "No translated keywords: ",
+                needs.map((tag) => tag.value)
+              );
+              if (this.tagCompleteFile) {
+                // 开启了使用tagcomplete翻译
+                translateByCSV(needs);
+              } else {
+                if (errors.length) {
+                  setLoadings(tags, false);
+                  this.$toastr.error(errors[0]);
+                  reject(errors[0]);
+                  return;
+                }
+                if (useNetwork) {
+                  translate(needs);
+                } else {
+                  setLoadings(needs, false);
+                  resolve();
+                }
+              }
+            })
+            .catch((error) => {
+              // 有一个错误，就不翻译了
+              setLoadings(tags, false);
+              this.$toastr.error(error);
+              reject(error);
+            });
+        };
+
+        if (this.groupTagsTranslate) {
+          translateByGroupTags(needTranslateTags);
+        } else if (this.tagCompleteFile) {
+          translateByCSV(needTranslateTags);
+        } else {
+          if (useNetwork) {
+            translate(needTranslateTags);
+          } else {
+            setLoadings(needTranslateTags, false);
+            resolve();
+          }
+        }
+      });
+    },
 
     refreshTags() {
       // Force re-render of all tags to apply new colors (SAFE VERSION)
