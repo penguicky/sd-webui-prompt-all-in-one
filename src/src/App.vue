@@ -10,7 +10,6 @@
         :textarea="item.$textarea"
         :steps="item.$steps"
         v-model:language-code="languageCode"
-        :translate-apis="translateApis"
         :languages="languages"
         :history-key="item.historyKey"
         @click:show-history="onShowHistory(item.id, $event)"
@@ -86,16 +85,13 @@
     <select-language
       ref="selectLanguage"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
-      v-model:translate-api="translateApi"
       v-model:tag-complete-file="tagCompleteFile"
       v-model:only-csv-on-auto="onlyCsvOnAuto"
     ></select-language>
     <prompt-format
       ref="promptFormat"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
       v-model:auto-remove-space="autoRemoveSpace"
       v-model:auto-remove-last-comma="autoRemoveLastComma"
@@ -115,14 +111,12 @@
     <blacklist
       ref="blacklist"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
       @update:blacklist="onUpdateBlacklist"
     ></blacklist>
     <hotkey
       ref="hotkey"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
       :default-hotkey="hotkey"
       @update:hotkey="onUpdateHotkey"
@@ -130,7 +124,6 @@
     <history
       ref="history"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
       v-model:tag-complete-file="tagCompleteFile"
       v-model:only-csv-on-auto="onlyCsvOnAuto"
@@ -140,7 +133,6 @@
     <favorite
       ref="favorite"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
       v-model:tag-complete-file="tagCompleteFile"
       v-model:only-csv-on-auto="onlyCsvOnAuto"
@@ -149,13 +141,11 @@
     <extension-css
       ref="extensionCss"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
     />
     <packages-state
       ref="packagesState"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
       @click:select-language="onSelectLanguageClick"
       :packages-state="packagesState"
@@ -165,14 +155,12 @@
     <about
       ref="about"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
     />
 
     <extra-networks-popup
       ref="extraNetworksPopup"
       v-model:language-code="languageCode"
-      :translate-apis="translateApis"
       :languages="languages"
       :extra-networks="extraNetworks"
     />
@@ -370,13 +358,7 @@ export default {
       ],
       languageCode: "",
       languages: {},
-      translateApis: [],
-      translateApi: "",
-      translateApiConfig: {},
-      canOneTranslate: false,
-      autoTranslate: false,
-      autoTranslateToEnglish: false,
-      autoTranslateToLocal: false,
+      // Translation functionality removed
       autoRemoveSpace: true,
       autoRemoveLastComma: false,
       autoKeepWeightZero: false,
@@ -460,7 +442,7 @@ export default {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
         console.log("onLanguageCodeChange", val);
-        this.canOneTranslate = common.canOneTranslate(this.languageCode);
+        // Translation functionality removed
         this.gradioAPI
           .setData("languageCode", val)
           .then((data) => {})
@@ -469,41 +451,7 @@ export default {
       },
       immediate: false,
     },
-    autoTranslateToEnglish: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        console.log("onAutoTranslateToEnglishChange", val);
-        this.gradioAPI
-          .setData("autoTranslateToEnglish", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoTranslateToLocal: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        console.log("onAutoTranslateToLocalChange", val);
-        this.gradioAPI
-          .setData("autoTranslateToLocal", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoTranslate: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.autoTranslateToEnglish = this.autoTranslate;
-        this.autoTranslateToLocal = this.autoTranslate;
-        console.log("onAutoTranslateChange", val);
-        this.gradioAPI
-          .setData("autoTranslate", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
+    // Auto-translation watchers removed
     autoRemoveSpace: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
@@ -688,18 +636,7 @@ export default {
       },
       immediate: false,
     },
-    translateApi: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        console.log("onTranslateApiChange", val, oldVal);
-        this.updateTranslateApiConfig();
-        this.gradioAPI
-          .setData("translateApi", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
+
     tagCompleteFile: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
@@ -862,8 +799,9 @@ export default {
       .then((res) => {
         console.log("config:", res);
         this.languageCode = res.i18n.default;
-        this.translateApi = res.translate_apis.default;
-        this.translateApis = res.translate_apis.apis;
+        // Translation functionality removed
+        this.translateApi = "";
+        this.translateApis = [];
         this.python = res.python;
         this.packagesState = res.packages_state;
         let languages = {};
@@ -891,9 +829,7 @@ export default {
       this.loadExtraNetworks();
       let dataListsKeys = [
         "languageCode",
-        "autoTranslate",
-        "autoTranslateToEnglish",
-        "autoTranslateToLocal",
+        // Auto-translation removed
         "autoRemoveSpace",
         "autoRemoveLastComma",
         "autoKeepWeightZero",
@@ -906,7 +842,7 @@ export default {
         "autoRemoveBeforeLineComma",
         "autoFormatCategorySpacing",
         "autoRemoveCategoryTrailingComma",
-        /*'hideDefaultInput', */ "translateApi",
+        /*'hideDefaultInput', */
         "enableTooltip",
         "enableNativeHighlighting",
         "tagCompleteFile",
@@ -955,31 +891,7 @@ export default {
             }
           }
         }
-        this.canOneTranslate = common.canOneTranslate(this.languageCode);
-        if (data.autoTranslateToEnglish !== null) {
-          this.autoTranslateToEnglish = data.autoTranslateToEnglish;
-        }
-        if (data.autoTranslateToLocal !== null) {
-          this.autoTranslateToLocal = data.autoTranslateToLocal;
-        }
-        if (data.autoTranslate !== null) {
-          if (this.canOneTranslate) {
-            this.autoTranslate = data.autoTranslate;
-            this.autoTranslateToEnglish = this.autoTranslate;
-            this.autoTranslateToLocal = this.autoTranslate;
-          } else {
-            this.autoTranslate = false;
-          }
-        } else {
-          if (this.canOneTranslate) {
-            this.autoTranslate =
-              this.autoTranslateToEnglish || this.autoTranslateToLocal;
-            this.autoTranslateToEnglish = true;
-            this.autoTranslateToLocal = true;
-          } else {
-            this.autoTranslate = false;
-          }
-        }
+        // Auto-translation functionality removed
         if (data.autoRemoveSpace !== null) {
           this.autoRemoveSpace = data.autoRemoveSpace;
         }
@@ -1031,14 +943,7 @@ export default {
           this.enableTooltip ? "true" : "false"
         );
         this.updateTippyState();
-        if (data.translateApi !== null) {
-          this.translateApi = data.translateApi;
-          /*if (data.translateApi === 'alibaba_free') {
-                        this.gradioAPI.setData('translateApi', this.translateApi)
-                    } else {
-                        this.translateApi = data.translateApi
-                    }*/
-        }
+        // Translation functionality removed
         if (data.tagCompleteFile !== null) {
           this.tagCompleteFile = data.tagCompleteFile;
           waitTick.addWaitTick(() => {
@@ -1107,7 +1012,7 @@ export default {
           }
         }
 
-        this.updateTranslateApiConfig();
+        // Translation functionality removed
         this.$refs.extensionCss.init();
 
         // Apply syntax highlighting colors on startup
@@ -1254,41 +1159,7 @@ export default {
         }
       }
     },
-    updateTranslateApiConfig() {
-      this.gradioAPI
-        .getData("translate_api." + this.translateApi)
-        .then((res) => {
-          let config = {};
-          const apiItem = common.getTranslateApiItem(
-            this.translateApis,
-            this.translateApi
-          );
-          if (apiItem.config) {
-            for (const item of apiItem.config) {
-              if (
-                apiItem.type === "translators" &&
-                item.key === "region" &&
-                !res["region"]
-              ) {
-                config[item.key] =
-                  this.languageCode === "zh_CN" ||
-                  this.languageCode === "zh_HK" ||
-                  this.languageCode === "zh_TW"
-                    ? "China"
-                    : "EN";
-              } else {
-                if (res) {
-                  config[item.key] = res[item.key];
-                } else {
-                  config[item.key] = item.default || "";
-                }
-              }
-            }
-            config["concurrent"] = apiItem.concurrent || 0;
-          }
-          this.translateApiConfig = config;
-        });
-    },
+
     onPromptFormatClick(e) {
       this.$refs.promptFormat.open(e);
     },
