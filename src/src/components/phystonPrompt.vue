@@ -1001,6 +1001,7 @@
 import Sortable from "sortablejs";
 
 import common from "@/utils/common";
+import waitTick from "@/utils/waitTick";
 
 import LanguageMixin from "@/mixins/languageMixin";
 import VueNumberInput from "@/components/vue-number-input.vue";
@@ -1230,6 +1231,11 @@ export default {
       editing: {},
       isEditing: false,
       colorRefreshKey: 0, // Key to force re-rendering when colors change
+
+      // Performance optimization flags
+      _updatingPrompt: false,
+      _performanceMode: false,
+      _lastPromptLength: 0,
     };
   },
   computed: {
@@ -1327,9 +1333,12 @@ export default {
           // 如果焦点在 textarea 上，就不要触发 onTextareaChange 了
           if (document.activeElement === this.textarea) return;
           oldValue = newValue;
-          this.onTextareaChange(true);
+          // Use debounced change detection for auto-loading
+          waitTick.debounce('autoLoadWebui', () => {
+            this.onTextareaChange(true);
+          }, 300, this);
         }
-      }, 500);
+      }, 1000); // Reduced frequency from 500ms to 1000ms
       // this.textarea.removeEventListener('change', this.onTextareaChange)
       // this.textarea.addEventListener('change', this.onTextareaChange)
       // this.textarea.removeEventListener('blur', this.onTextareaChange)
@@ -1344,6 +1353,8 @@ export default {
     },
     _onTextareaChange(event) {
       console.log("onTextareaChange", event);
+
+      // Check if autocomplete is active - if so, don't process
       const autocompleteParent =
         this.textarea.parentElement.getElementsByClassName(
           "autocompleteParent"
@@ -1361,13 +1372,27 @@ export default {
       }
 
       let value = this.textarea.value.trim();
+
+      // Early return if no change
       if (value === this.prompt.trim()) return;
+
+      // Debounce text processing to prevent rapid changes from removing terms
+      this._checkPerformanceMode();
+      const delay = this._getDebounceDelay('text-processing');
+
+      waitTick.debounce('textareaChange', () => {
+        this._processTextareaChange(value);
+      }, delay, this);
+    },
+
+    _processTextareaChange(value) {
       let tags = common.splitTags(
         value,
         this.autoBreakBeforeWrap,
         this.autoBreakAfterWrap
       );
 
+      // Optimize disabled tags handling
       let disabledTags = [];
       this.tags.forEach((tag, index) => {
         if (tag.disabled) {
@@ -1379,29 +1404,59 @@ export default {
         tags.splice(index, 0, tag.value);
       });
 
+      // Create a map for faster lookups
+      const oldTagsMap = new Map();
+      this.tags.forEach(tag => {
+        oldTagsMap.set(tag.value, tag);
+      });
+
       let indexes = [];
-      let oldTags = this.tags;
-      this.tags = [];
-      for (let index in tags) {
-        let tag = tags[index];
+      const newTags = [];
+
+      // Process tags more efficiently
+      for (let i = 0; i < tags.length; i++) {
+        let tag = tags[i];
+        if (tag === "") continue;
+
         if (tag === "\n") {
-          this._appendTag("\n", "\n", false, -1, "wrap");
+          const id = Date.now() + (Math.random() * 1000000).toFixed(0) + i;
+          const wrapTag = {
+            id,
+            value: "\n",
+            localValue: "\n",
+            disabled: false,
+            type: "wrap"
+          };
+          this._setTag(wrapTag);
+          newTags.push(wrapTag);
         } else {
-          // if (tag.indexOf('Negative prompt:') === 0) break
-          let find = false;
-          for (let item of oldTags) {
-            if (item.value === tag) {
-              find = item;
-              break;
+          // Use map for faster lookup
+          const existingTag = oldTagsMap.get(tag);
+          const localValue = existingTag ? existingTag.localValue : "";
+          const disabled = existingTag ? existingTag.disabled : false;
+
+          const id = Date.now() + (Math.random() * 1000000).toFixed(0) + i;
+          const textTag = {
+            id,
+            value: tag,
+            localValue: localValue,
+            disabled: disabled,
+            type: "text"
+          };
+          this._setTag(textTag);
+
+          if (!this._isTagBlacklist(textTag)) {
+            newTags.push(textTag);
+            if (!existingTag) {
+              indexes.push(newTags.length - 1);
             }
           }
-          const localValue = find ? find.localValue : "";
-          const disabled = find ? find.disabled : false;
-          const index = this._appendTag(tag, localValue, disabled, -1, "text");
-          if (!find && index !== -1) indexes.push(index);
         }
       }
-      this.updateTags();
+
+      // Update tags array in one operation
+      this.tags = newTags;
+      this.updateTagsDebounced(150);
     },
     _setTextareaFocus() {
       if (typeof get_uiCurrentTabContent !== "function") return;
@@ -1423,18 +1478,28 @@ export default {
     },
     genPrompt(tags = null, ignoreDisabled = false) {
       tags = tags || this.tags;
+
+      // Early return for empty tags
+      if (!tags || tags.length === 0) {
+        return "";
+      }
+
       let prompts = [];
       let tags2 = [];
+
+      // Optimize filtering for large tag arrays
       if (!ignoreDisabled) {
-        for (let key in tags) {
-          if (!tags[key].disabled) {
-            tags2.push(tags[key]);
-          }
-        }
+        tags2 = tags.filter(tag => !tag.disabled);
       } else {
         tags2 = tags;
       }
+
       let length = tags2.length;
+
+      // Early return if no enabled tags
+      if (length === 0) {
+        return "";
+      }
       tags2.forEach((tag, index) => {
         let prompt = "";
         if (typeof tag["type"] === "string" && tag.type === "wrap") {
@@ -1615,65 +1680,150 @@ export default {
         this._appendTag("\n", "\n", false, index, "wrap");
       }
       if (insertWrapIndexes.length) {
-        this.updateTags();
+        // Use debounced update to prevent immediate recursion
+        waitTick.debounce('updatePrompt-recursive', () => {
+          this.updateTags();
+        }, 50, this);
         return;
       }
 
-      this.prompt = this.genPrompt();
-      this.textarea.value = this.prompt;
-      common.hideCompleteResults(this.textarea);
-      if (typeof updateInput === "function") {
-        updateInput(this.textarea);
-      } else {
-        this.textarea.dispatchEvent(new Event("input"));
+      // Generate and update prompt
+      const newPrompt = this.genPrompt();
+
+      // Only update if prompt actually changed
+      if (this.prompt !== newPrompt) {
+        this.prompt = newPrompt;
+        this.textarea.value = this.prompt;
+
+        // Debounce DOM operations for better performance
+        waitTick.debounce('updatePrompt-dom', () => {
+          common.hideCompleteResults(this.textarea);
+          if (typeof updateInput === "function") {
+            updateInput(this.textarea);
+          } else {
+            this.textarea.dispatchEvent(new Event("input"));
+          }
+        }, 50, this);
       }
     },
     updateTags() {
       console.log("tags change", this.tags);
       this.updatePrompt();
-      const steps = this.steps.querySelector('input[type="number"]').value;
-      if (!this.$appMode) {
-        this.gradioAPI.tokenCounter(this.textarea.value, steps).then((res) => {
-          const { token_count, max_length } = res;
-          this.counterText = `${token_count}/${max_length}`;
-        });
-      }
-      if (this.tags.length) {
-        this.gradioAPI
-          .getLatestHistory(this.historyKey)
-          .then((res) => {
-            if (res && res.prompt === this.prompt) {
-              // 如果有上一条记录，并且prompt相同，则更新
-              this.gradioAPI
-                .setHistory(
-                  this.historyKey,
-                  res.id,
-                  this.tags,
-                  this.prompt,
-                  res.name
-                )
-                .then((res) => {})
-                .catch((err) => {});
-            } else {
-              this.gradioAPI
-                .pushHistory(this.historyKey, this.tags, this.prompt)
-                .then((res) => {})
-                .catch((err) => {});
-            }
-          })
-          .catch((err) => {});
-      }
-      this.$nextTick(() => {
-        for (let i = 0; i < this.$refs.promptTagsList.children.length; i++) {
-          let tag = this.$refs.promptTagsList.children[i];
-          if (!tag.classList.contains("prompt-tag")) continue;
-          let id = tag.getAttribute("data-id");
-          let wrap = this.$refs.promptTagWrap.find((wrap) => {
-            return wrap.getAttribute("data-id") === id;
+
+      // Debounce expensive operations
+      waitTick.debounce('updateTags-tokenCounter', () => {
+        const steps = this.steps.querySelector('input[type="number"]').value;
+        if (!this.$appMode) {
+          this.gradioAPI.tokenCounter(this.textarea.value, steps).then((res) => {
+            const { token_count, max_length } = res;
+            this.counterText = `${token_count}/${max_length}`;
           });
-          if (wrap) tag.parentNode.insertBefore(wrap, tag.nextElementSibling);
         }
-      });
+      }, 500, this);
+
+      // Debounce history operations
+      if (this.tags.length) {
+        waitTick.debounce('updateTags-history', () => {
+          this.gradioAPI
+            .getLatestHistory(this.historyKey)
+            .then((res) => {
+              if (res && res.prompt === this.prompt) {
+                // 如果有上一条记录，并且prompt相同，则更新
+                this.gradioAPI
+                  .setHistory(
+                    this.historyKey,
+                    res.id,
+                    this.tags,
+                    this.prompt,
+                    res.name
+                  )
+                  .then((res) => {})
+                  .catch((err) => {});
+              } else {
+                this.gradioAPI
+                  .pushHistory(this.historyKey, this.tags, this.prompt)
+                  .then((res) => {})
+                  .catch((err) => {});
+              }
+            })
+            .catch((err) => {});
+        }, 1000, this);
+      }
+
+      // Debounce DOM operations
+      waitTick.debounce('updateTags-dom', () => {
+        this.$nextTick(() => {
+          for (let i = 0; i < this.$refs.promptTagsList.children.length; i++) {
+            let tag = this.$refs.promptTagsList.children[i];
+            if (!tag.classList.contains("prompt-tag")) continue;
+            let id = tag.getAttribute("data-id");
+            let wrap = this.$refs.promptTagWrap.find((wrap) => {
+              return wrap.getAttribute("data-id") === id;
+            });
+            if (wrap) tag.parentNode.insertBefore(wrap, tag.nextElementSibling);
+          }
+        });
+      }, 100, this);
+    },
+
+    /**
+     * Debounced version of updateTags for user interactions
+     * @param {number} delay - Custom delay in milliseconds (optional, will use performance-aware default)
+     */
+    updateTagsDebounced(delay = null) {
+      this._checkPerformanceMode();
+      const actualDelay = delay || this._getDebounceDelay('tag-change');
+
+      waitTick.debounce('updateTags-main', () => {
+        this.updateTags();
+      }, actualDelay, this);
+    },
+
+    /**
+     * Immediate update for critical operations
+     */
+    updateTagsImmediate() {
+      // Cancel any pending debounced updates
+      waitTick.cancelDebounce('updateTags-main');
+      this.updateTags();
+    },
+
+    /**
+     * Check if performance mode should be enabled based on prompt length
+     */
+    _checkPerformanceMode() {
+      const currentLength = this.tags.length;
+      const shouldEnablePerformanceMode = currentLength > 100; // Enable for prompts with >100 tags
+
+      if (shouldEnablePerformanceMode !== this._performanceMode) {
+        this._performanceMode = shouldEnablePerformanceMode;
+        console.log(`[PromptAllInOne] Performance mode ${shouldEnablePerformanceMode ? 'enabled' : 'disabled'} (${currentLength} tags)`);
+      }
+
+      this._lastPromptLength = currentLength;
+    },
+
+    /**
+     * Get appropriate debounce delay based on performance mode and operation type
+     */
+    _getDebounceDelay(operationType = 'default') {
+      if (this._performanceMode) {
+        switch (operationType) {
+          case 'user-input': return 300;
+          case 'tag-change': return 200;
+          case 'text-processing': return 500;
+          case 'dom-update': return 150;
+          default: return 400;
+        }
+      } else {
+        switch (operationType) {
+          case 'user-input': return 150;
+          case 'tag-change': return 100;
+          case 'text-processing': return 250;
+          case 'dom-update': return 50;
+          default: return 200;
+        }
+      }
     },
     onResize() {
       this.tags.forEach((tag) => {

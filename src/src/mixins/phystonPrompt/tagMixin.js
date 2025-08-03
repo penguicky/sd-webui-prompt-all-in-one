@@ -679,7 +679,8 @@ export default {
           tag.value = oldValue;
           this._setTag(tag);
         }
-        this.updateTags();
+        // Use debounced update for user input changes
+        this.updateTagsDebounced(150);
       }
     },
     onTagWeightNumChange(id, e) {
@@ -796,7 +797,7 @@ export default {
         }
       }
       tag.weightNum = weightNum;
-      this.updateTags();
+      this.updateTagsDebounced(100);
     },
     onDeleteTagClick(id) {
       let tag = this.tags.find((tag) => tag.id === id);
@@ -807,7 +808,8 @@ export default {
 
       let index = this.tags.indexOf(tag);
       this.tags.splice(index, 1);
-      this.updateTags();
+      // Use immediate update for deletions
+      this.updateTagsImmediate();
     },
 
     // New method for deleting individual category terms
@@ -868,7 +870,7 @@ export default {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return;
       tag.disabled = !tag.disabled;
-      this.updateTags();
+      this.updateTagsDebounced(100);
     },
     onIncWeightClick(id, num) {
       // Check if we're working with a category term
@@ -909,7 +911,7 @@ export default {
       }
       tag.value = value;
       if (localValue !== "") tag.localValue = localValue;
-      this.updateTags();
+      this.updateTagsDebounced(100);
     },
     onDecWeightClick(id, num) {
       // Check if we're working with a category term
@@ -944,7 +946,7 @@ export default {
         localValue = common.setLayers(localValue, decWeight, "[", "]");
       tag.value = value;
       if (localValue !== "") tag.localValue = localValue;
-      this.updateTags();
+      this.updateTagsDebounced(100);
     },
     onWrapTagClick(id) {
       let tag = this.tags.find((tag) => tag.id === id);
