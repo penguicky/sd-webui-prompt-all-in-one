@@ -37,7 +37,7 @@ def get_token_counter(text, steps):
             token_count, max_length = max([model_hijack.get_prompt_lengths(prompt) for prompt in prompts],
                                         key=lambda args: args[0])
 
-        return {"token_count": token_count, "max_length": max_length}
+    return {"token_count": token_count, "max_length": max_length}
 
     except Exception as e:
         # return 0 token count if any error (model instability, parsing error, etc.) occurs during calculation
