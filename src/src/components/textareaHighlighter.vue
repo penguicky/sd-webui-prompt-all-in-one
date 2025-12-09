@@ -139,6 +139,7 @@ export default {
         this.resizeObserver = new ResizeObserver((entries) => {
           clearTimeout(this.resizeTimer);
           this.resizeTimer = setTimeout(() => {
+            this.applyOverlayStyles(); 
             this.updateHighlighting();
           }, 50);
         });
@@ -146,7 +147,6 @@ export default {
         this.resizeObserver.observe(this.targetTextarea);
       }
     },
-
     applyOverlayStyles() {
       if (!this.targetTextarea || !this.$refs.highlighterWrapper) return;
 
@@ -189,7 +189,7 @@ export default {
         tabSize: textareaStyle.tabSize,
         padding: textareaStyle.padding,
         paddingTop: textareaStyle.paddingTop,
-        paddingRight: textareaStyle.paddingRight,
+        paddingRight: `calc(${textareaStyle.paddingRight} + ${this.targetTextarea.offsetWidth - this.targetTextarea.clientWidth}px)`,
         paddingBottom: textareaStyle.paddingBottom,
         paddingLeft: textareaStyle.paddingLeft,
         border: textareaStyle.border,
