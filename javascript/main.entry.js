@@ -87,7 +87,7 @@ sfsdfsdf
 1112323
 sfsdfsdf
 2222
-3333`}},emits:[],computed:{},watch:{packagesState:{handler(){this.isAllInstalled()||this.open()},deep:!0}},mounted(){},methods:{isInstalled(rr){for(let nr of this.packagesState)if(nr.name===rr)return nr.state;return!1},isAllInstalled(){for(let rr of this.packagesState)if(!rr.state)return!1;return!0},getCommand(rr){return`${this.python} -m pip install ${rr.package}`},onInstallClick(){if(this.loading)return;this.loading=!0,this.showResult=!0,this.result="";let rr=[];this.packagesState.forEach(Cn=>{Cn.state||rr.push(Cn)});const nr=(Cn=!1)=>{this.loading=!1,Cn&&(this.result+=`
+3333`}},emits:[],computed:{},watch:{packagesState:{handler(){},deep:!0}},mounted(){},methods:{isInstalled(rr){for(let nr of this.packagesState)if(nr.name===rr)return nr.state;return!1},isAllInstalled(){for(let rr of this.packagesState)if(!rr.state)return!1;return!0},getCommand(rr){return`${this.python} -m pip install ${rr.package}`},onInstallClick(){if(this.loading)return;this.loading=!0,this.showResult=!0,this.result="";let rr=[];this.packagesState.forEach(Cn=>{Cn.state||rr.push(Cn)});const nr=(Cn=!1)=>{this.loading=!1,Cn&&(this.result+=`
 complete!`,setTimeout(this.close,2e3)),this.scrollToBottom()},_n=()=>{let Cn=rr.shift();if(!Cn)return nr(!0);this.gradioAPI.installPackage(Cn.name,Cn.package).then($n=>{this.result+=`${$n.message}
 `,$n.state?(this.scrollToBottom(),_n()):nr(!1)}).catch($n=>{console.log($n),this.result+=`${Cn.name} install failed
 ${$n.message}

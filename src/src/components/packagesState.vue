@@ -70,11 +70,11 @@ export default {
     watch: {
         packagesState: {
             handler() {
-                if (!this.isAllInstalled()) {
-                    this.open()
-                } else {
-                    // this.close()
-                }
+                // if (!this.isAllInstalled()) {
+                //     this.open()
+                // } else {
+                //     // this.close()
+                // }
             },
             deep: true,
         },
