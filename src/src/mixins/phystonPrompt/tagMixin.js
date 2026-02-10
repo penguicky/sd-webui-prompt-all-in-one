@@ -16,6 +16,9 @@ export default {
     // Non-reactive state for batched autoSizeInput calls
     this._pendingAutoSizeIds = new Set();
     this._autoSizeRafId = null;
+    // Non-reactive state for batched _setTagHeight calls
+    this._pendingHeightTagIds = new Set();
+    this._heightRafId = null;
   },
   mounted() {
     /*common.gradioApp().addEventListener('mousemove', () => {
@@ -31,6 +34,10 @@ export default {
     if (this._autoSizeRafId) {
       cancelAnimationFrame(this._autoSizeRafId);
       this._autoSizeRafId = null;
+    }
+    if (this._heightRafId) {
+      cancelAnimationFrame(this._heightRafId);
+      this._heightRafId = null;
     }
   },
   methods: {
@@ -82,25 +89,40 @@ export default {
       });
     },
     _setTagHeight(tag) {
-      let maxNum = 10;
-      let interval = setInterval(() => {
-        // console.log(maxNum, tag)
-        maxNum--;
-        if (maxNum <= 0) clearInterval(interval);
-        if (!this.$refs["promptTagValue-" + tag.id]) return false;
-        if (!this.$refs["promptTagValue-" + tag.id][0]) return false;
-        clearInterval(interval);
-        let $tag = this.$refs["promptTagValue-" + tag.id][0];
-        let height = $tag.offsetHeight;
-        $tag.parentNode.style.height = height + "px";
-        if (this.$refs["promptTagEdit-" + tag.id]) {
-          this.$refs["promptTagEdit-" + tag.id][0].style.height = height + "px";
-        }
-        if (this.$refs["promptTagDelete-" + tag.id]) {
-          this.$refs["promptTagDelete-" + tag.id][0].style.height =
-            height + "px";
-        }
-      }, 50);
+      // Batch tag height calculations: collect IDs and flush in a single rAF.
+      // This replaces per-tag setInterval polling that caused layout thrashing
+      // when many tags were created at once (e.g., pasting a 50-tag prompt).
+      this._pendingHeightTagIds.add(tag.id);
+      if (!this._heightRafId) {
+        this._heightRafId = requestAnimationFrame(() => {
+          this._heightRafId = null;
+          const ids = [...this._pendingHeightTagIds];
+          this._pendingHeightTagIds.clear();
+
+          // Phase 1: READ — collect all offsetHeight values
+          const measurements = [];
+          for (const id of ids) {
+            const valRef = this.$refs["promptTagValue-" + id];
+            if (!valRef || !valRef[0]) continue;
+            const $tag = valRef[0];
+            measurements.push({
+              id,
+              height: $tag.offsetHeight,
+              parent: $tag.parentNode,
+              editRef: this.$refs["promptTagEdit-" + id],
+              deleteRef: this.$refs["promptTagDelete-" + id],
+            });
+          }
+
+          // Phase 2: WRITE — apply all heights without interleaved reads
+          for (const m of measurements) {
+            const h = m.height + "px";
+            m.parent.style.height = h;
+            if (m.editRef && m.editRef[0]) m.editRef[0].style.height = h;
+            if (m.deleteRef && m.deleteRef[0]) m.deleteRef[0].style.height = h;
+          }
+        });
+      }
     },
     _getTagType(tag) {},
     _setTagClass(tag) {
