@@ -9,6 +9,9 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': '"production"',
   },
+  esbuild: {
+    pure: ['console.log'],
+  },
   plugins: [vue()],
   resolve: {
     alias: {
