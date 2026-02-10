@@ -15,7 +15,8 @@ export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      'lodash-es': resolve(__dirname, 'src/shims/lodash-es.js'),
     }
   },
   build: {
