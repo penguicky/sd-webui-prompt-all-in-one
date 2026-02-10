@@ -12,6 +12,11 @@ export default {
       modifiedTermValues: new Map(), // CRITICAL FIX: Store modified term values persistently in reactive data
     };
   },
+  created() {
+    // Non-reactive state for batched autoSizeInput calls
+    this._pendingAutoSizeIds = new Set();
+    this._autoSizeRafId = null;
+  },
   mounted() {
     /*common.gradioApp().addEventListener('mousemove', () => {
             this.$refs.highlightPrompt.hide()
@@ -21,6 +26,12 @@ export default {
     this.$nextTick(() => {
       this._setupCategoryTermHoverListeners();
     });
+  },
+  beforeUnmount() {
+    if (this._autoSizeRafId) {
+      cancelAnimationFrame(this._autoSizeRafId);
+      this._autoSizeRafId = null;
+    }
   },
   methods: {
     _setTag(tag) {
@@ -232,10 +243,19 @@ export default {
       } else {
         index = this.tags.push(tag);
       }
-      this.$nextTick(() => {
-        if (this.$refs["promptTagEdit-" + id])
-          autoSizeInput(this.$refs["promptTagEdit-" + id][0]);
-      });
+      // Batch autoSizeInput calls — collect IDs and flush in a single rAF
+      this._pendingAutoSizeIds.add(id);
+      if (!this._autoSizeRafId) {
+        this._autoSizeRafId = requestAnimationFrame(() => {
+          this._autoSizeRafId = null;
+          const ids = this._pendingAutoSizeIds;
+          this._pendingAutoSizeIds = new Set();
+          ids.forEach((tagId) => {
+            const ref = this.$refs["promptTagEdit-" + tagId];
+            if (ref && ref[0]) autoSizeInput(ref[0]);
+          });
+        });
+      }
       return index - 1;
     },
     // Helper function to highlight weight syntax with colons
