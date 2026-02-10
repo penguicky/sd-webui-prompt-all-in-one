@@ -74,14 +74,12 @@
 </template>
 <script>
 import common from "@/utils/common";
-
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
 
 export default {
     components: {IconSvg},
     props: {},
-    mixins: [LanguageMixin],
+    mixins: [],
     data() {
         return {
             historyKey: '',
@@ -122,6 +120,9 @@ export default {
     mounted() {
     },
     methods: {
+        getLang(key) {
+            return common.getLang(key);
+        },
         formatTime(time) {
             return common.formatTime(time * 1000, false)
         },

@@ -178,89 +178,222 @@ export default {
         return true
     },
 
-    canOneTranslate(languageCode) {
-        const detections = ['zh_CN', 'zh_HK', 'zh_TW', 'ar_SA', 'ja_JP', 'ko_KR', 'ru_RU']
-        detections.push('am_ET', 'hy_AM', 'as_IN', 'bn_BD', 'ba_RU', 'bg_BG', 'prs_AF', 'dv_MV', 'el_GR', 'gu_IN', 'he_IL', 'hi_IN', 'iu_CA', 'kn_IN', 'kk_KZ', 'km_KH', 'ku_Arab_IQ', 'ky_KG', 'lo_LA', 'mk_MK', 'ml_IN', 'mr_IN', 'mn_Cyrl_MN', 'mn_Mong_CN', 'my_MM', 'ne_NP', 'or_IN', 'ps_AF', 'fa_IR', 'pa_Guru_IN', 'sr_Cyrl_RS', 'ta_IN', 'tt_Latn_RU', 'te_IN', 'th_TH', 'bo_CN', 'ti_ET', 'uk_UA', 'ur_PK', 'ug_Arab_CN', 'vi_VN')
-        if (!detections.includes(languageCode)) return false // 无法检测是否英文
-        return true
-    },
-
     /**
-     * 检测是否英文
-     * @param text {string}
-     * @param languageCode {string}
-     * @returns {number} 0: 不是英文，1: 是英文，2: 未知
-     */
-    isEnglishByLangCode(text, languageCode) {
-        if (!this.canOneTranslate(languageCode)) return -1 // 无法检测是否英文
-
-        const length = text.length
-        // 通过ascii码判断
-        for (let i = 0; i < length; i++) {
-            if (text.charCodeAt(i) > 127) {
-                // 不是英文
-                return 0
-            }
-        }
-        return 1
-    },
-
-    /**
-     * 是否是同一种语言
-     * @param code1 {string}
-     * @param code2 {string}
-     */
-    isSameLang(code1, code2) {
-        if (code1 === code2) return true
-        let code1Lower = code1.toLowerCase()
-        let code2Lower = code2.toLowerCase()
-        if (code1Lower === code2Lower) return true
-        code1 = code1.replace('-', '_')
-        code2 = code2.replace('-', '_')
-        if (code1 === code2) return true
-        code1 = code1.split('_')[0]
-        code2 = code2.split('_')[0]
-        if (code1 === code2) return true
-        return false
-    },
-
-    /**
-     * 获取语言
+     * Get English language string by key
      * @param key {string}
-     * @param languageCode {string}
-     * @param languages {object}
      * @returns {string}
      */
-    getLang(key, languageCode, languages) {
-        if (languages[languageCode] && languages[languageCode].lang && languages[languageCode].lang[key]) {
-            return this.replaceGlobals(languages[languageCode].lang[key], languageCode)
-        } else if (languages['en_US'] && languages['en_US'].lang && languages['en_US'].lang[key]) {
-            return this.replaceGlobals(languages['en_US'].lang[key], 'en_US')
-        } else {
-            return this.replaceGlobals(key, languageCode)
+    getLang(key) {
+        const val = this._englishStrings[key]
+        if (val) {
+            return this.replaceGlobals(val)
         }
+        return this.replaceGlobals(key)
     },
 
-    replaceGlobals(text, languageCode) {
+    replaceGlobals(text) {
         for (let key in globals) {
             let value = globals[key]
-            if (key === 'docs') {
-                switch (languageCode) {
-                    case 'zh_CN':
-                        value += '/zh-CN'
-                        break
-                    case 'zh_HK':
-                    case 'zh_TW':
-                        value += '/zh-TW'
-                        break
-                    case 'ru_RU':
-                        value += '/ru'
-                        break
-                }
-            }
             text = text.replace(new RegExp(`{{${key}}}`, 'g'), value)
         }
         return text
+    },
+
+    _englishStrings: {
+        "need_api_key": "API Key Required",
+        "dont_need_api_key": "API Key Not Required (Unstable)",
+        "prompt": "Prompt",
+        "negative_prompt": "Negative Prompt",
+        "txt2img": "Text to Image",
+        "img2img": "Image to Image",
+        "please_enter_new_keyword": "Please Enter New Keyword",
+        "local_language": "Local Language",
+        "increase_weight_add_parentheses": "Increase Keyword Weight: Add ()",
+        "increase_weight_subtract_parentheses": "Increase Keyword Weight: Subtract ()",
+        "decrease_weight_add_brackets": "Decrease Keyword Weight: Add []",
+        "decrease_weight_subtract_brackets": "Decrease Keyword Weight: Subtract []",
+        "translate_keyword_to_local_language": "Translate Keyword to Local Language",
+        "copy_to_clipboard": "Copy to Clipboard",
+        "disable_keyword": "Disable Keyword",
+        "enable_keyword": "Enable Keyword",
+        "copy_keywords_to_clipboard": "Copy All Keywords to Clipboard",
+        "translate_keywords_to_local_language": "Translate All Keywords to Local Language",
+        "translate_keyword_to_english": "Translate to English",
+        "translate_all_keywords_to_english": "Translate All Non-English Keywords to English",
+        "auto_translate_to_english": "Automatically Translate to English After Entering New Keyword",
+        "auto_translate_to_local_language": "Automatically Translate to Local Language After Entering New Keyword",
+        "translate_api": "Translation API",
+        "history": "History",
+        "clear_history": "Clear History",
+        "clear_history_confirm": "Are you sure you want to clear the history?",
+        "clear_history_success": "History cleared",
+        "max_history_count": "Maximum History Count",
+        "favorite": "Favorites",
+        "add_to_favorite": "Add to Favorites",
+        "remove_from_favorite": "Remove from Favorites",
+        "use": "Use",
+        "click_to_edit": "Click Left Mouse Button to Edit",
+        "drop_to_order": "Hold Down Left Mouse Button to Drag and Sort",
+        "enter_to_save": "Press Enter to Save Keyword",
+        "enter_to_add": "Press Enter to Add Keyword",
+        "translate_api_not_found": "Translation API Not Found",
+        "translate_language_not_support": "Translation Language Not Supported",
+        "translate_api_not_support": "Translation API Not Supported",
+        "unset_name": "Name Not Set",
+        "no_history": "No History",
+        "get_history_error": "Failed to Get History",
+        "no_favorite": "No Favorites",
+        "get_favorite_error": "Failed to Get Favorites",
+        "hide_default_input_box": "Hide Default Input Box",
+        "show_default_input_box": "Show Default Input Box",
+        "translate_test": "Translate Test",
+        "close": "Close",
+        "save": "Save",
+        "delete_all_keywords": "Delete All Keywords",
+        "delete_all_keywords_confirm": "Are you sure you want to delete all keywords?",
+        "whether_to_enable_tooltip": "Enable Tooltips for Each Function. If You Are Familiar with All the Functions of This Extension, You Can Uncheck This Option.",
+        "enable_native_highlighting_tooltip": "Enable native textarea syntax highlighting. Shows colored syntax highlighting in WebUI's default prompt input boxes (Blue: Embeddings, Orange: LoRA, Green: Regular terms)",
+        "delete_all_history": "Delete All History",
+        "delete_all_history_confirm": "Are you sure you want to delete all history?",
+        "please_enter_the_content_here": "Please enter content",
+        "not_api_key_desc": "Free translation interfaces are unstable, and not every interface can be used on your computer. Please apply for an API Key to use the stable official interface.",
+        "setting_desc": "Settings: Translation API, automatic translation, show/hide...",
+        "line_break_character": "Line break character",
+        "tagcomplete_translate_desc": "<p>Enhance translation function using danbooru.csv in {{nameTagComplete}} extension to achieve the purpose of saving network requests and accurate translation.</p><p>After clicking the refresh button, csv files from the following paths will be scanned: <p>extensions\\{{shortNameTagComplete}}\\tags</p><p>extensions\\{{shortName}}\\tags</p></p><p>You can download csv files from git repository <a target='_blank' href='{{githubAssets}}/tree/main/tags'>{{nameAssets}}/tags</a>.</p>",
+        "test": "Test",
+        "refresh": "Refresh",
+        "not_enable": "Not enable",
+        "translate_result": "The translation result of {0} is: {1}",
+        "not_found_csv_file": "Csv file not found",
+        "theme_extension": "Theme: Extension Plugin Style",
+        "is_remove_space": "Whether to remove the spaces after each comma in the keyword.<br/>Checking will automatically remove the spaces (difficult to read).<br/>Unchecking will keep one space (affecting TOKEN count).",
+        "theme": "Theme",
+        "enhance": "Enhance",
+        "only_csv_on_auto": "Automatic translation uses only CSV translation (not network translation). To use both CSV and network translation, click the translate button manually.",
+        "one_translate_all_keywords": "Translate all keywords in one click",
+        "auto_translate": "Automatically translate after entering new keywords",
+        "is_remove_last_comma": "Remove the last comma in Prompt or not.<br/>When selected, Prompt output is \"aaa,bbb,ccc\".<br/>When unselected, Prompt output is \"aaa,bbb,ccc,\".",
+        "is_keep_weight_zero": "Keep the format of keywords with a weight of 0 or not.<br/>When selected, the keyword format is kept as \"(text:0)\".<br/>When unselected, the format is not kept as \"test\".",
+        "is_keep_weight_one": "Keep the format of keywords with a weight of 1 or not.<br/>When selected, the keyword format is kept as \"(text:1)\".<br/>When unselected, the format is not kept as \"test\".",
+        "prompt_format": "Prompt Format",
+        "tagcomplete_translate_desc2": "Selecting the wrong CSV file will result in an empty or '0' translation. After changing the file, please click the test button below and check if the translated result is correctly displayed in your local language.",
+        "dblclick_to_disable": "Double-click to disable/enable keyword",
+        "batch_operation": "Batch operation",
+        "success": "Success!",
+        "failed": "Failed!",
+        "packages_desc": "Some packages of python are detected to have not been installed or installed unsuccessfully. You need to click to try reinstalling them. After all the packages are successfully installed, all the functions can work normally.<br/>If you still cannot install them successfully after clicking the install button, you need to manually copy the command and execute it in the terminal.",
+        "installed": "Installed",
+        "not_install": "Not installed",
+        "install": "Install",
+        "packages_installing": "Starting to install......If you need to check the detailed installation log, please go to the WebUI console to view it. After the installation is completed, this window will close automatically!",
+        "today_not_show": "Do not show this window today",
+        "free": "Free",
+        "apply_for_free": "Apply for free use",
+        "chatgpt_prompts_preset": "StableDiffusion is a deep learning text-to-image model that generates images based on prompts. These prompts can specify the desired elements of the image, such as the appearance of characters, background, color and lighting effects, as well as the theme and style of the image. The prompts often contain weighted numbers in parentheses to indicate the importance or emphasis of certain details. For example, \"(masterpiece:1.5)\" indicates that the quality of the work is very important. Multiple parentheses also have similar effects. In addition, if square brackets are used, such as \"{blue hair:white hair:0.3}\", this represents the fusion of blue and white hair, with blue hair accounting for 0.3.\nHere is an example of using prompts to help an AI model generate an image: masterpiece,(bestquality),highlydetailed,ultra-detailed,cold,solo,(1girl),(detailedeyes),(shinegoldeneyes),(longliverhair),expressionless,(long sleeves),(puffy sleeves),(white wings),shinehalo,(heavymetal:1.2),(metaljewelry),cross-lacedfootwear (chain),(Whitedoves:1.2)\n\nFollowing the example, provide a set of prompts that detail the following content. Start the prompts directly without using natural language to describe them: ",
+        "use_chatgpt_gen_prompts": "Use ChatGPT to Generate Prompts",
+        "input_image_desc": "Please enter the image description, for example: a cat sitting on top of a building, a very high-definition, very authentic photo.",
+        "api_config": "API Configuration",
+        "image_desc": "Image Description",
+        "preset": "Preset",
+        "ai_one": "First Sentence Sent to AI",
+        "ai_two": "Second Sentence Sent to AI",
+        "restore_to_default": "Restore to System Default",
+        "generate": "Generate",
+        "generate_result": "Generate Result",
+        "is_required": "{0} is required!",
+        "is_not_dict": "{0} must be a dictionary!",
+        "no_response_from": "No response from {0}!",
+        "request_error": "{0} request error!",
+        "response_is_empty": "{0} response is empty!",
+        "response_error": "{0} response error!",
+        "install_success": "{0} installed successfully!",
+        "install_failed": "Error: {0} installation failed!",
+        "translate_text_is_empty": "Translation text is empty!",
+        "about_desc": "About, Updates, Help, Documentation",
+        "version": "Version",
+        "unknown_version": "Unknown Version",
+        "has_new_version": "There is a new version available, please update",
+        "wiki_desc": "Installation tutorial, detailed features, usage instructions, frequently asked questions, etc. See:",
+        "switch_to_light_theme": "Switch to Light Theme",
+        "switch_to_dark_theme": "Switch to Dark Theme",
+        "offline_api": "Offline Translation",
+        "initialize": "Initialize",
+        "initialize_finished": "Initialization Finished!",
+        "initialize_failed": "Initialization Failed!",
+        "model_not_initialized": "Model Not Initialized",
+        "model_is_loading": "Model is Loading...",
+        "download_model_desc": "<p>If the model has not been downloaded before, the program will automatically download the model from Hugging Face.</p><p>The model is several gigabytes in size and requires a high-speed internet connection.</p><p>The download may take a while, please be patient. If the download fails, please reinitialize.</p><p>You can check detailed logs and progress in the console.</p><p>The model files will be downloaded to the directory: extensions\\{{shortName}}\\models</p>",
+        "download_model_desc2": "<p class='common-red'>If you do not have a good network environment or need to download offline, please view:</p><p><a href='{{docs}}/OfflineTranslation.html' target='_blank'>{{docs}}/OfflineTranslation.html</a></p>",
+        "auto_input_prompt": "Auto-fill prompt when the webpage loads",
+        "disabled": "Disabled",
+        "last_input_prompt": "Last input prompt",
+        "is_break_before_wrap": "Whether to add a line break before the \"BREAK\" keyword.<br/>When selected, a line break will be automatically added.<br/>Deselecting will not perform any action.",
+        "is_break_after_wrap": "Whether to add a line break after the \"BREAK\" keyword.<br/>When selected, a line break will be automatically added.<br/>Deselecting will not perform any action.",
+        "show_panel": "Show Panel",
+        "hide_panel": "Hide Panel",
+        "show_group_tags": "Show Group Tags",
+        "hide_group_tags": "Hide Group Tags",
+        "tags-copyright": "Prompt words integration source from 路过银河(Zhihu)、unknown author(Google Drive)、internet, etc. Thanks to these selfless contributors!",
+        "reset_default_color": "Reset to Default Color",
+        "clear_color": "Clear Color",
+        "tags_color": "Tags Color",
+        "keywords_blacklist": "Keywords Blacklist",
+        "blacklist_desc": "Keywords set as blacklist will be automatically filtered by the plugin!",
+        "prompt_blacklist_list": "Prompt Blacklist List",
+        "negative_prompt_blacklist_list": "Negative Prompt Blacklist List",
+        "lora_blacklist_list": "Lora Blacklist",
+        "lycoris_blacklist_list": "Lycoris Blacklist",
+        "embedding_blacklist_list": "Embedding Blacklist",
+        "one_keyword_per_line": "One keyword per line",
+        "Keyword_group": "Keyword Group",
+        "enhance_translation_use_keyword_group": "Enhance Translation with Keyword Group",
+        "enhance_translation_use_Keyword_group_desc": "<p>The keyword group file is located in the group_tags directory.</p><p>When this feature is enabled, the contents in the YAML file are prioritized for translation matching. If no match is found, the translation interface is used.</p><p>You can visit <a href='https://aiodoc.physton.com/GroupTags.html' target='_blank'>https://aiodoc.physton.com/GroupTags.html</a> for specific instructions on the files in the group_tags directory.</p>",
+        "hotkey_setting": "Hotkey Setting",
+        "syntax_highlighting_settings": "Syntax Highlighting Settings",
+        "color_settings": "Color Settings",
+        "embeddings_color": "Embeddings Color",
+        "lora_names_color": "LoRA Names Color",
+        "regular_terms_color": "Regular Terms Color",
+        "weight_boost_color": "Weight Boost Color (>1.0)",
+        "weight_reduce_color": "Weight Reduce Color (<1.0)",
+        "punctuation_color": "Punctuation Color",
+        "category_names_color": "Category Names Color",
+        "preview": "Preview",
+        "reset_to_defaults": "Reset to Defaults",
+        "left_click_keyword_tag": "Left Click Keyword Tag",
+        "right_click_keyword_tag": "Right Click Keyword Tag",
+        "dblclick_keyword_tag": "Double Click Keyword Tag",
+        "hover_keyword_tag": "Hover Keyword Tag",
+        "edit_keyword": "Edit Keyword",
+        "disable_enable_keyword": "Disable/Enable Keyword",
+        "show_keyword_extend_panel": "Show Keyword Extend Panel",
+        "none": "None",
+        "add_blacklist": "Add to blacklist",
+        "confirm_add_blacklist": "Do you want to add the keyword \"{0}\" to the blacklist?",
+        "cancel_confirm_add_blacklist": "Cancel the confirmation dialog when adding to the blacklist from the keyword list expansion panel.",
+        "model_name": "Model Name",
+        "output_name": "Output Name",
+        "filename": "File Name",
+        "filepath": "File Path",
+        "trained_words": "Trigger Keywords",
+        "description": "Description",
+        "open_civitai": "Open Civitai",
+        "use_keywords": "Use Keywords",
+        "translate_blacklist_desc": "Set as forbidden words for translation, the plugin will not translate them!",
+        "disable_translate_prompt_blacklist_list": "List of prompt words for translation disable",
+        "width": "Width",
+        "height": "Height",
+        "move_up": "Move Up",
+        "move_down": "Move Down",
+        "is_remove_lora_before_comma": "Remove the comma before Lora or not.<br/>If selected, the Lora output will be 'aaa &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt;, ddd'.<br/>If unselected, the Lora output will be 'aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd'.",
+        "is_remove_lora_after_comma": "Remove the comma after Lora or not.<br/>If selected, the Lora output will be 'aaa, &lt;lora:bbb:0.1&gt; &lt;lora:ccc:0.1&gt; ddd'.<br/>If unselected, the Lora output will be 'aaa, &lt;lora:bbb:0.1&gt;, &lt;lora:ccc:0.1&gt;, ddd'.",
+        "is_use_novel_ai_weight_symbol": "Whether to use NovelAI's weight symbol.<br/>Checking this will change the weight symbol () to {}",
+        "is_remove_before_line_comma": "Whether to remove the comma before a line break.<br/>If checked, the output will be \"aaa, bbb<br/>ccc\".<br/>If unchecked, the output will be \"aaa, bbb,<br/>ccc\".",
+        "is_format_category_spacing": "Whether to format category declaration spacing.<br/>When checked, category declarations will be formatted to \"{category: term1, term2, term3}\" format, ensuring one space after colon and one space after commas.",
+        "is_remove_category_trailing_comma": "Whether to remove trailing comma in category declarations.<br/>When checked, category declarations like \"{category: term1, term2,}\" will be formatted to \"{category: term1, term2}\".",
+        "auto_load_webui_prompt": "Auto-load WebUI prompt changes.<br/>When checked, the plugin will automatically load and format keyword parsing when the content of the prompt input box in WebUI changes.<br/>When unchecked, you need to manually click the load prompt button when the content of the prompt input box in WebUI changes.",
+        "load_webui_prompt": "Load WebUI prompt",
+        "delete_keyword": "Delete Keyword",
     },
 
     /**
@@ -428,24 +561,7 @@ export default {
         return true
     },
 
-    /**
-     * 获取翻译api的item
-     * @param translateApis {Array}
-     * @param translateApi {string}
-     * @returns {{}|*}
-     */
-    getTranslateApiItem(translateApis, translateApi) {
-        if (!translateApis || translateApis.length <= 0) return {}
-        for (let group of translateApis) {
-            for (let item of group.children) {
-                if (item.key === translateApi) {
-                    return item
-                }
-            }
-        }
-        // 如果没有找到，那么返回第一个
-        return translateApis[0].children[0]
-    },
+
 
     /**
      * 隐藏 a1111-sd-webui-tagcomplete 面板

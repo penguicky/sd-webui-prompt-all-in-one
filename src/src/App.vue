@@ -9,8 +9,6 @@
         :neg="item.neg"
         :textarea="item.$textarea"
         :steps="item.$steps"
-        v-model:language-code="languageCode"
-        :languages="languages"
         :history-key="item.historyKey"
         @click:show-history="onShowHistory(item.id, $event)"
         :favorite-key="item.favoriteKey"
@@ -51,7 +49,6 @@
         v-model:tag-complete-file="tagCompleteFile"
         v-model:only-csv-on-auto="onlyCsvOnAuto"
         v-model:group-tags-translate="groupTagsTranslate"
-        @click:select-language="onSelectLanguageClick"
         @click:select-theme="onSelectThemeClick"
 
         :extra-networks="extraNetworks"
@@ -82,17 +79,8 @@
       ></physton-prompt>
     </template>
 
-    <select-language
-      ref="selectLanguage"
-      v-model:language-code="languageCode"
-      :languages="languages"
-      v-model:tag-complete-file="tagCompleteFile"
-      v-model:only-csv-on-auto="onlyCsvOnAuto"
-    ></select-language>
     <prompt-format
       ref="promptFormat"
-      v-model:language-code="languageCode"
-      :languages="languages"
       v-model:auto-remove-space="autoRemoveSpace"
       v-model:auto-remove-last-comma="autoRemoveLastComma"
       v-model:auto-keep-weight-zero="autoKeepWeightZero"
@@ -110,21 +98,15 @@
     ></prompt-format>
     <blacklist
       ref="blacklist"
-      v-model:language-code="languageCode"
-      :languages="languages"
       @update:blacklist="onUpdateBlacklist"
     ></blacklist>
     <hotkey
       ref="hotkey"
-      v-model:language-code="languageCode"
-      :languages="languages"
       :default-hotkey="hotkey"
       @update:hotkey="onUpdateHotkey"
     ></hotkey>
     <history
       ref="history"
-      v-model:language-code="languageCode"
-      :languages="languages"
       v-model:tag-complete-file="tagCompleteFile"
       v-model:only-csv-on-auto="onlyCsvOnAuto"
       @refresh-favorites="onRefreshFavorites"
@@ -132,36 +114,25 @@
     />
     <favorite
       ref="favorite"
-      v-model:language-code="languageCode"
-      :languages="languages"
       v-model:tag-complete-file="tagCompleteFile"
       v-model:only-csv-on-auto="onlyCsvOnAuto"
       @use="onUseFavorite"
     ></favorite>
     <extension-css
       ref="extensionCss"
-      v-model:language-code="languageCode"
-      :languages="languages"
     />
     <packages-state
       ref="packagesState"
-      v-model:language-code="languageCode"
-      :languages="languages"
-      @click:select-language="onSelectLanguageClick"
       :packages-state="packagesState"
       :python="python"
     />
 
     <about
       ref="about"
-      v-model:language-code="languageCode"
-      :languages="languages"
     />
 
     <extra-networks-popup
       ref="extraNetworksPopup"
-      v-model:language-code="languageCode"
-      :languages="languages"
       :extra-networks="extraNetworks"
     />
 
@@ -208,8 +179,6 @@
     <syntax-highlighting-settings
       ref="syntaxHighlightingSettings"
       :colors="syntaxHighlightingColors"
-      :language-code="languageCode"
-      :languages="languages"
       @update:colors="onUpdateSyntaxHighlightingColors"
       @close="onSyntaxHighlightingSettingsClose"
     />
@@ -220,7 +189,7 @@
 import PhystonPrompt from "./components/phystonPrompt.vue";
 
 import common from "@/utils/common";
-import SelectLanguage from "@/components/selectLanguage.vue";
+
 import Favorite from "@/components/favorite.vue";
 import History from "@/components/history.vue";
 import IconSvg from "@/components/iconSvg.vue";
@@ -252,7 +221,6 @@ export default {
     IconSvg,
     History,
     Favorite,
-    SelectLanguage,
 
     PhystonPrompt,
     ExtraNetworksPopup,
@@ -356,9 +324,6 @@ export default {
           id: "phystonPrompt_img2img_neg_prompt",
         },
       ],
-      languageCode: "",
-      languages: {},
-      // Translation functionality removed
       autoRemoveSpace: true,
       autoRemoveLastComma: false,
       autoKeepWeightZero: false,
@@ -438,20 +403,6 @@ export default {
     };
   },
   watch: {
-    languageCode: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        console.log("onLanguageCodeChange", val);
-        // Translation functionality removed
-        this.gradioAPI
-          .setData("languageCode", val)
-          .then((data) => {})
-          .catch((err) => {});
-        waitTick.addWaitTick(() => this.loadGroupTags());
-      },
-      immediate: false,
-    },
-    // Auto-translation watchers removed
     autoRemoveSpace: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
@@ -798,17 +749,8 @@ export default {
       .getConfig()
       .then((res) => {
         console.log("config:", res);
-        this.languageCode = res.i18n.default;
-        // Translation functionality removed
-        this.translateApi = "";
-        this.translateApis = [];
         this.python = res.python;
         this.packagesState = res.packages_state;
-        let languages = {};
-        res.i18n.languages.forEach((lang) => {
-          languages[lang.code] = lang;
-        });
-        this.languages = languages;
         this.init();
       })
       .catch((err) => {
@@ -821,15 +763,24 @@ export default {
         console.log(err);
       });
   },
+  beforeUnmount() {
+    // Clean up paste polling timers to prevent memory leaks
+    if (this._pastePollingTimeout) {
+      clearTimeout(this._pastePollingTimeout);
+      this._pastePollingTimeout = null;
+    }
+    if (this._pastePollingInterval) {
+      clearInterval(this._pastePollingInterval);
+      this._pastePollingInterval = null;
+    }
+  },
   methods: {
     getLang(key) {
-      return common.getLang(key, this.languageCode, this.languages);
+      return common.getLang(key);
     },
     init() {
       this.loadExtraNetworks();
       let dataListsKeys = [
-        "languageCode",
-        // Auto-translation removed
         "autoRemoveSpace",
         "autoRemoveLastComma",
         "autoKeepWeightZero",
@@ -865,33 +816,6 @@ export default {
       });
 
       this.gradioAPI.getDatas(dataListsKeys).then((data) => {
-        if (data.languageCode !== null) {
-          let findLang = false;
-          for (let key in this.languages) {
-            if (this.languages[key].code === data.languageCode) {
-              findLang = true;
-              break;
-            }
-          }
-          if (findLang) {
-            this.languageCode = data.languageCode;
-            this.$forceUpdate();
-            this.gradioAPI.setData("languageCode", this.languageCode);
-          }
-        } else {
-          let browserLang = navigator.language || navigator.userLanguage || "";
-          if (browserLang) {
-            for (let key in this.languages) {
-              if (common.isSameLang(this.languages[key].code, browserLang)) {
-                this.languageCode = this.languages[key].code;
-                this.$forceUpdate();
-                this.gradioAPI.setData("languageCode", this.languageCode);
-                break;
-              }
-            }
-          }
-        }
-        // Auto-translation functionality removed
         if (data.autoRemoveSpace !== null) {
           this.autoRemoveSpace = data.autoRemoveSpace;
         }
@@ -1090,7 +1014,7 @@ export default {
       });
     },
     loadGroupTags() {
-      return this.gradioAPI.getGroupTags(this.languageCode).then((data) => {
+      return this.gradioAPI.getGroupTags('en_US').then((data) => {
         if (!data || data === "") {
           this.groupTags = [];
         } else {
@@ -1172,10 +1096,6 @@ export default {
     onSyntaxHighlightingSettingsClick(e) {
       this.$refs.syntaxHighlightingSettings.open();
     },
-    onSelectLanguageClick(e) {
-      this.$refs.selectLanguage.open(e);
-    },
-
     onSelectThemeClick() {
       this.$refs.extensionCss.open();
     },
@@ -1237,14 +1157,16 @@ export default {
       $textarea.dispatchEvent(new Event("input"));
       this.pasteBtn.dispatchEvent(new Event("click"));
 
-      setTimeout(() => {
-        let interval = 0;
+      // Store timeout/interval IDs for cleanup on unmount
+      this._pastePollingTimeout = setTimeout(() => {
+        this._pastePollingTimeout = null;
         let intervalI = 0;
-        interval = setInterval(() => {
+        this._pastePollingInterval = setInterval(() => {
           intervalI++;
           if (intervalI > 100) {
             this.pasteLoading = false;
-            clearInterval(interval);
+            clearInterval(this._pastePollingInterval);
+            this._pastePollingInterval = null;
             return;
           }
           if (
@@ -1253,7 +1175,8 @@ export default {
           ) {
             this.pasteLoading = false;
             this.closePastePopup();
-            clearInterval(interval);
+            clearInterval(this._pastePollingInterval);
+            this._pastePollingInterval = null;
             common.hideCompleteResults($textarea);
             common.hideCompleteResults($textareaNeg);
             ids.forEach((id, index) => {

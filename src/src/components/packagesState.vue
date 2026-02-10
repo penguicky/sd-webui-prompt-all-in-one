@@ -13,10 +13,6 @@
                     </label>
                 </div>
                 <div class="state-body-name">{{ globals.shortName }}</div>
-                <div class="state-body-language" @click="$emit('click:selectLanguage', $event)">
-                    <icon-svg name="i18n"/>
-                    <div>Language: {{ langName }}</div>
-                </div>
                 <div class="state-body-desc" v-html="getLang('packages_desc')"></div>
                 <div class="package-list">
                     <div v-for="(item) in packagesState" :key="item.name" class="package-item">
@@ -39,13 +35,13 @@
     </Transition>
 </template>
 <script>
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
+import common from "@/utils/common";
 
 export default {
     name: 'PackagesState',
     components: {IconSvg},
-    mixins: [LanguageMixin],
+    mixins: [],
     props: {
         python: {
             type: String,
@@ -82,6 +78,9 @@ export default {
     mounted() {
     },
     methods: {
+        getLang(key) {
+            return common.getLang(key);
+        },
         isInstalled(packageName) {
             let installed = false
             for (let item of this.packagesState) {

@@ -8,7 +8,6 @@ from fastapi.responses import FileResponse
 from scripts.physton_prompt.storage import Storage
 from scripts.physton_prompt.get_extensions import get_extensions
 from scripts.physton_prompt.get_token_counter import get_token_counter
-from scripts.physton_prompt.get_i18n import get_i18n
 
 from scripts.physton_prompt.history import History
 from scripts.physton_prompt.csv import get_csvs, get_csv
@@ -74,7 +73,6 @@ def on_app_started(_: gr.Blocks, app: FastAPI):
     @app.get("/physton_prompt/get_config")
     async def _get_config():
         return {
-            'i18n': get_i18n(True),
             'packages_state': get_packages_state(),
             'python': sys.executable,
         }

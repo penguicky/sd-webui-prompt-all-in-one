@@ -22,13 +22,6 @@
           <div class="extend-content">
             <div class="extend-btn-group">
               <div
-                class="extend-btn-item"
-                v-tooltip="'Language: ' + langName"
-                @click="$emit('click:selectLanguage', $event)"
-              >
-                <icon-svg class="hover-scale-120" name="i18n" />
-              </div>
-              <div
                 :class="['extend-btn-item', isLatestVersion ? '' : 'red-dot']"
               >
                 <icon-svg
@@ -1003,7 +996,6 @@ import Sortable from "sortablejs";
 import common from "@/utils/common";
 import waitTick from "@/utils/waitTick";
 
-import LanguageMixin from "@/mixins/languageMixin";
 import VueNumberInput from "@/components/vue-number-input.vue";
 import HeaderMixin from "@/mixins/phystonPrompt/headerMixin";
 import DropMixin from "@/mixins/phystonPrompt/dropMixin";
@@ -1021,7 +1013,7 @@ export default {
     IconSvg,
     ColorPicker,
   },
-  mixins: [LanguageMixin, HeaderMixin, DropMixin, TagMixin, GroupTagsMixin],
+  mixins: [HeaderMixin, DropMixin, TagMixin, GroupTagsMixin],
   props: {
     name: {
       type: String,
@@ -1186,8 +1178,6 @@ export default {
     },
   },
   emits: [
-    "update:languageCode",
-
     "update:autoRemoveSpace",
     "update:autoRemoveLastComma",
     "update:autoKeepWeightZero",
@@ -1204,7 +1194,6 @@ export default {
     "click:selectTheme",
     "click:switchTheme",
     "click:showAbout",
-    "click:selectLanguage",
     "click:showHistory",
     "click:showFavorite",
     "refreshFavorites",
@@ -1240,7 +1229,7 @@ export default {
   },
   computed: {
     isEnglish() {
-      return this.languageCode === "en_US";
+      return true;
     },
 
   },
@@ -1320,13 +1309,23 @@ export default {
       });
     });
   },
+  beforeUnmount() {
+    // Clean up textarea polling interval to prevent memory leaks
+    if (this._textareaPollingInterval) {
+      clearInterval(this._textareaPollingInterval);
+      this._textareaPollingInterval = null;
+    }
+  },
   methods: {
+    getLang(key) {
+      return common.getLang(key);
+    },
     init() {
       this.tags = [];
       this.onTextareaChange();
 
       let oldValue = this.textarea.value;
-      setInterval(() => {
+      this._textareaPollingInterval = setInterval(() => {
         if (this.autoLoadWebuiPrompt) {
           let newValue = this.textarea.value;
           if (oldValue === newValue) return;
@@ -1707,6 +1706,8 @@ export default {
       }
     },
     updateTags() {
+      // Invalidate network tag index for O(1) lookups
+      this._invalidateNetworkTagIndex();
       console.log("tags change", this.tags);
       this.updatePrompt();
 

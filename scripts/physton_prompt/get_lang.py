@@ -1,5 +1,10 @@
-from scripts.physton_prompt.storage import Storage
-from scripts.physton_prompt.get_i18n import get_i18n
+# Hardcoded English translations for backend error messages
+_translations = {
+    'is_required': '{0} is required',
+    'is_not_dict': '{0} is not a dict',
+    'install_success': 'Successfully installed {0}',
+    'install_failed': 'Failed to install {0}',
+}
 
 
 def replace_vars(text, vars):
@@ -9,37 +14,7 @@ def replace_vars(text, vars):
 
 
 def get_lang(key, vars={}):
-    i18n = get_i18n()
-    code = Storage.get('languageCode')
-
-    def find_lang(code):
-        for item in i18n['languages']:
-            if item['code'] == code:
-                return True
-        return False
-
-    if not find_lang(code):
-        code = i18n['default']
-
-    if not find_lang(code):
-        code = 'en_US'
-
-    def find_key(key, code):
-        for item in i18n['languages']:
-            if item['code'] == code:
-                if key in item['lang']:
-                    if vars == {}:
-                        return item['lang'][key]
-                    else:
-                        return replace_vars(item['lang'][key], vars)
-        return False
-
-    find = find_key(key, code)
-    if find:
-        return find
-
-    find = find_key(key, 'en_US')
-    if find:
-        return find
-
-    return replace_vars(key, vars)
+    text = _translations.get(key, key)
+    if vars:
+        return replace_vars(text, vars)
+    return text

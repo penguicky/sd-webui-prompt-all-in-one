@@ -2,6 +2,11 @@ import common from "@/utils/common"
 import {ref} from "vue"
 
 export default {
+    created() {
+        // Non-reactive index for O(1) extra network tag lookups
+        this._networkTagIndex = new Map()
+        this._networkTagIndexDirty = true
+    },
     data() {
         return {
             groupTagsActive: '',
@@ -267,7 +272,7 @@ export default {
                     // 去除 return
                     onclick = onclick.replace(/^return /, '').trim()
                     console.log(onclick)
-                    eval(onclick)
+                    new Function(onclick)()
                 } else {
                     selectCheckpoint(data.basename)
                 }
@@ -281,7 +286,7 @@ export default {
                 })
                 this.updateTags()
             } else {
-                let index = this._appendTag(eval(data.prompt), '', false, -1, 'text')
+                let index = this._appendTag(JSON.parse(data.prompt), '', false, -1, 'text')
                 if (this.autoTranslateToLocal) {
                     this.translates([index], true, false).finally(() => {
                         this.updateTags()
@@ -322,28 +327,53 @@ export default {
             }
             return style
         },
-        _groupTagsExtraNetworkTagsIndexes(data) {
-            let name = data.name
-            let output_name = data.output_name || undefined
-            let indexes = []
-            for (let index in this.tags) {
-                let tag = this.tags[index]
-                if (typeof tag['type'] === 'string' && tag.type === 'wrap') continue
-                let find = false
+        _invalidateNetworkTagIndex() {
+            this._networkTagIndexDirty = true
+        },
+        _rebuildNetworkTagIndex() {
+            this._networkTagIndex.clear()
+            for (let index = 0; index < this.tags.length; index++) {
+                const tag = this.tags[index]
+                if (typeof tag.type === 'string' && tag.type === 'wrap') continue
+                let key = null
                 if (tag.isLora) {
-                    find = tag.loraName === name || (output_name && tag.loraName === output_name)
+                    key = tag.loraName
                 } else if (tag.isLyco) {
-                    find = tag.lycoName === name || (output_name && tag.lycoName === output_name)
+                    key = tag.lycoName
                 } else if (tag.isEmbedding) {
-                    find = tag.embeddingName === name || (output_name && tag.embeddingName === output_name)
+                    key = tag.embeddingName
                 } else {
-                    find = tag.originalValue === name || (output_name && tag.originalValue === output_name)
+                    key = tag.originalValue
                 }
-                if (find) {
-                    indexes.push(index)
+                if (key) {
+                    if (!this._networkTagIndex.has(key)) {
+                        this._networkTagIndex.set(key, [])
+                    }
+                    this._networkTagIndex.get(key).push(index)
                 }
             }
-            return indexes
+            this._networkTagIndexDirty = false
+        },
+        _groupTagsExtraNetworkTagsIndexes(data) {
+            // Lazily rebuild index on first access after invalidation
+            if (this._networkTagIndexDirty) {
+                this._rebuildNetworkTagIndex()
+            }
+            let name = data.name
+            let output_name = data.output_name || undefined
+            let indexes = new Set()
+
+            const byName = this._networkTagIndex.get(name)
+            if (byName) {
+                for (const idx of byName) indexes.add(idx)
+            }
+            if (output_name) {
+                const byOutputName = this._networkTagIndex.get(output_name)
+                if (byOutputName) {
+                    for (const idx of byOutputName) indexes.add(idx)
+                }
+            }
+            return [...indexes].sort((a, b) => a - b)
         },
         getGroupTagExtraNetworkStyle(data) {
             let indexes = this._groupTagsExtraNetworkTagsIndexes(data)

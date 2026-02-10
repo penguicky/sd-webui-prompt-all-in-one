@@ -33,14 +33,13 @@
     </Transition>
 </template>
 <script>
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
 import common from "@/utils/common";
 
 export default {
     name: 'ExtensionCss',
     components: {IconSvg},
-    mixins: [LanguageMixin],
+    mixins: [],
     props: {},
     data() {
         return {
@@ -52,6 +51,9 @@ export default {
     mounted() {
     },
     methods: {
+        getLang(key) {
+            return common.getLang(key);
+        },
         init() {
             this.refresh(true)
         },
@@ -88,8 +90,8 @@ export default {
         getName(item) {
             if (!item) return ''
             let name = item.manifest.name
-            if (item.manifest.i18n && item.manifest.i18n[this.languageCode]) {
-                name = item.manifest.i18n[this.languageCode]
+            if (item.manifest.i18n && item.manifest.i18n['en_US']) {
+                name = item.manifest.i18n['en_US']
             }
             return name
         },

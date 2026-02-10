@@ -209,14 +209,7 @@ export default {
       type: Object,
       required: true,
     },
-    languageCode: {
-      type: String,
-      default: "en",
-    },
-    languages: {
-      type: Object,
-      default: () => ({}),
-    },
+
   },
   emits: ["update:colors", "close"],
   data() {
@@ -251,7 +244,7 @@ export default {
   },
   methods: {
     getLang(key) {
-      return common.getLang(key, this.languageCode, this.languages);
+      return common.getLang(key);
     },
 
     open() {

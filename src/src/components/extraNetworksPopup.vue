@@ -48,7 +48,6 @@
     </div>
 </template>
 <script>
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
 import common from "@/utils/common";
 import globals from "../../globals";
@@ -59,7 +58,7 @@ const TYPE_EMBEDDING = 'embedding'
 export default {
     name: 'ExtraNetworksPopup',
     components: {IconSvg},
-    mixins: [LanguageMixin],
+    mixins: [],
     props: {
         extraNetworks: {
             type: Array,
@@ -85,6 +84,9 @@ export default {
     mounted() {
     },
     methods: {
+        getLang(key) {
+            return common.getLang(key);
+        },
         show(e, name, useCallback, showCheckpoints = false, from = 'tags') {
             this.mouseIn = false
             this.eMouseIn = true

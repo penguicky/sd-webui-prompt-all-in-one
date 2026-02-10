@@ -33,14 +33,13 @@
     </Transition>
 </template>
 <script>
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
 import common from "@/utils/common";
 
 export default {
     name: 'About',
     components: {IconSvg},
-    mixins: [LanguageMixin],
+    mixins: [],
     /*props: {
         version: {
             type: String,
@@ -104,6 +103,9 @@ export default {
         ]
     },
     methods: {
+        getLang(key) {
+            return common.getLang(key);
+        },
         open() {
             this.isOpen = true
             this.version = ''

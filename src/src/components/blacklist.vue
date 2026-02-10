@@ -54,13 +54,13 @@
     </Transition>
 </template>
 <script>
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
+import common from "@/utils/common";
 
 export default {
     name: 'Blacklist',
     components: {IconSvg},
-    mixins: [LanguageMixin],
+    mixins: [],
     props: {
     },
     data() {
@@ -90,6 +90,9 @@ export default {
     mounted() {
     },
     methods: {
+        getLang(key) {
+            return common.getLang(key);
+        },
         open() {
             this.isOpen = true
             this.data = {

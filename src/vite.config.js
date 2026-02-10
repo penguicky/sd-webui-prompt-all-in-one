@@ -19,7 +19,7 @@ export default defineConfig({
     // outDir: '../javascript',
     // assetsDir: '../',
     minify: true,
-    sourcemap: true,
+    sourcemap: false,
     // watch: {
       // https://rollupjs.org/configuration-options/#watch
     // },

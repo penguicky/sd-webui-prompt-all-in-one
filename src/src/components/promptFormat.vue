@@ -164,13 +164,13 @@
   </Transition>
 </template>
 <script>
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
+import common from "@/utils/common";
 
 export default {
   name: "PromptFormat",
   components: { IconSvg },
-  mixins: [LanguageMixin],
+  mixins: [],
   props: {
     autoRemoveSpace: {
       type: Boolean,
@@ -243,6 +243,9 @@ export default {
   computed: {},
   mounted() {},
   methods: {
+    getLang(key) {
+      return common.getLang(key);
+    },
     open() {
       this.isOpen = true;
     },

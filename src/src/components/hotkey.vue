@@ -24,13 +24,13 @@
     </Transition>
 </template>
 <script>
-import LanguageMixin from "@/mixins/languageMixin";
 import IconSvg from "@/components/iconSvg.vue";
+import common from "@/utils/common";
 
 export default {
     name: 'Hotkey',
     components: {IconSvg},
-    mixins: [LanguageMixin],
+    mixins: [],
     props: {
         defaultHotkey: {
             type: Object,
@@ -133,6 +133,9 @@ export default {
     mounted() {
     },
     methods: {
+        getLang(key) {
+            return common.getLang(key);
+        },
         open() {
             this.isOpen = true
             this.hotkeys.forEach(item => {
