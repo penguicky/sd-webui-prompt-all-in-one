@@ -1,4 +1,9 @@
-export default (tags, autoBreakBeforeWrap = false, autoBreakAfterWrap = false) => {
+// Memoization cache — avoids re-parsing the same prompt string repeatedly.
+// Keyed on "tags|autoBreakBeforeWrap|autoBreakAfterWrap". Bounded to 16 entries (LRU eviction).
+const _cache = new Map()
+const _CACHE_MAX = 16
+
+function _splitTagsImpl(tags, autoBreakBeforeWrap, autoBreakAfterWrap) {
     if (tags === null || tags === undefined || tags === false || tags === "" || tags.trim() === "") return []
 
     tags = tags.replace(/，/g, ',') // 中文逗号
@@ -207,6 +212,29 @@ export default (tags, autoBreakBeforeWrap = false, autoBreakAfterWrap = false) =
     }*/
 
     return result
+}
+
+export default (tags, autoBreakBeforeWrap = false, autoBreakAfterWrap = false) => {
+    if (tags === null || tags === undefined || tags === false || tags === "" || (typeof tags === 'string' && tags.trim() === "")) return []
+
+    const key = tags + '|' + autoBreakBeforeWrap + '|' + autoBreakAfterWrap
+    const cached = _cache.get(key)
+    if (cached !== undefined) {
+        // Return a shallow copy so callers can mutate (splice, etc.) without corrupting the cache
+        return cached.slice()
+    }
+
+    const result = _splitTagsImpl(tags, autoBreakBeforeWrap, autoBreakAfterWrap)
+
+    // Evict oldest entry if cache is full
+    if (_cache.size >= _CACHE_MAX) {
+        const firstKey = _cache.keys().next().value
+        _cache.delete(firstKey)
+    }
+    _cache.set(key, result)
+
+    // Return a copy so the cached array stays immutable
+    return result.slice()
 }
 
 /*
