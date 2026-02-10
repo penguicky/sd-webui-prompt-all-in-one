@@ -81,6 +81,36 @@ export default {
         }
     },
     computed: {},
+    watch: {
+        extraNetworks: {
+            handler(networks) {
+                // Build a lookup Map for O(1) name → item resolution.
+                // Replaces nested for-loops in show() that scanned every item on every hover.
+                const map = new Map()
+                if (!networks) return (this._networkLookup = map)
+                for (const network of networks) {
+                    let type
+                    if (network.name === 'textual inversion') type = TYPE_EMBEDDING
+                    else if (network.name === 'lora') type = TYPE_LORA
+                    else if (network.name === 'lycoris') type = TYPE_LYCO
+                    else if (network.name === 'checkpoints') type = 'checkpoints'
+                    else continue
+
+                    for (const item of network.items) {
+                        const entry = { type, item }
+                        const nameLower = item.name.toLowerCase()
+                        if (!map.has(nameLower)) map.set(nameLower, entry)
+                        if (item.output_name) {
+                            const outLower = item.output_name.toLowerCase()
+                            if (!map.has(outLower)) map.set(outLower, entry)
+                        }
+                    }
+                }
+                this._networkLookup = map
+            },
+            immediate: true,
+        },
+    },
     mounted() {
     },
     methods: {
@@ -100,33 +130,19 @@ export default {
             this.previewStyle = {}
             let data
             name = name.toLowerCase()
-            for (let extraNetwork of this.extraNetworks) {
-                if (extraNetwork.name === 'textual inversion') {
-                    for (let item of extraNetwork.items) {
-                        if (item.name.toLowerCase() === name) {
-                            this.type = TYPE_EMBEDDING
-                            data = item
-                            break
-                        }
-                    }
-                } else if (extraNetwork.name === 'lora' || extraNetwork.name === 'lycoris') {
-                    for (let item of extraNetwork.items) {
-                        if (item.name.toLowerCase() === name || (item.output_name && item.output_name.toLowerCase() === name)) {
-                            this.type = extraNetwork.name === 'lora' ? TYPE_LORA : TYPE_LYCO
-                            data = item
-                            break
-                        }
-                    }
-                } else if (showCheckpoints && extraNetwork.name === 'checkpoints') {
-                    for (let item of extraNetwork.items) {
-                        if (item.name.toLowerCase() === name) {
-                            this.type = 'checkpoints'
-                            data = item
-                            break
-                        }
-                    }
+
+            // O(1) lookup via pre-built Map (replaces nested for-loops)
+            const entry = this._networkLookup && this._networkLookup.get(name)
+            if (entry) {
+                // Skip checkpoints unless explicitly requested
+                if (entry.type === 'checkpoints' && !showCheckpoints) {
+                    // fall through to not-found
+                } else {
+                    this.type = entry.type
+                    data = entry.item
                 }
             }
+
             if (!this.type) return this.isShow = false
             this.isShow = true
 

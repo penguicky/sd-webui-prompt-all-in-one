@@ -29,6 +29,11 @@ export default {
             this.gradioAPI.getExtraNetworks().then(res => {
                 if (!res) return
                 this.extraNetworks = res
+
+                // Build a single lookup Map for O(1) name resolution.
+                // Used by getExtraNetworkFullName() instead of nested for-loops.
+                const fullNameMap = new Map()
+
                 res.forEach(extraNetwork => {
                     if (extraNetwork.name === 'textual inversion') {
                         let list = {}
@@ -39,9 +44,16 @@ export default {
                     } else if (extraNetwork.name === 'lora' || extraNetwork.name === 'lycoris') {
                         let list = {}
                         extraNetwork.items.forEach(item => {
-                            list[item.name.toLowerCase()] = item.name
+                            const nameLower = item.name.toLowerCase()
+                            list[nameLower] = item.name
+                            // Also index into fullNameMap for getExtraNetworkFullName
+                            const key = extraNetwork.name + ':' + nameLower
+                            if (!fullNameMap.has(key)) fullNameMap.set(key, item)
                             if (item.output_name) {
-                                list[item.output_name.toLowerCase()] = item.name
+                                const outLower = item.output_name.toLowerCase()
+                                list[outLower] = item.name
+                                const outKey = extraNetwork.name + ':' + outLower
+                                if (!fullNameMap.has(outKey)) fullNameMap.set(outKey, item)
                             }
                         })
                         if (extraNetwork.name === 'lora') {
@@ -51,25 +63,18 @@ export default {
                         }
                     }
                 })
+                this._extraNetworkFullNameMap = fullNameMap
             })
         },
         getExtraNetworkFullName(name, type = 'lora') {
-            if (typeof this.extraNetworks !== 'object') return name
-            for (let extraNetwork of this.extraNetworks) {
-                if (extraNetwork.name !== type) continue
-                const nameLowerCase = name.toLowerCase()
-                for (let item of extraNetwork.items) {
-                    if (item.name.toLowerCase() === nameLowerCase || item.output_name?.toLowerCase() === nameLowerCase) {
-                        if (!item.civitai_info?.name) return name
-                        if (item.civitai_info.model?.name && item.civitai_info.model.name !== item.civitai_info.name) {
-                            return '[' + item.civitai_info.name + '] ' + item.civitai_info.model.name
-                        } else {
-                            return item.civitai_info.name
-                        }
-                    }
-                }
+            if (!this._extraNetworkFullNameMap) return name
+            const item = this._extraNetworkFullNameMap.get(type + ':' + name.toLowerCase())
+            if (!item) return name
+            if (!item.civitai_info?.name) return name
+            if (item.civitai_info.model?.name && item.civitai_info.model.name !== item.civitai_info.name) {
+                return '[' + item.civitai_info.name + '] ' + item.civitai_info.model.name
             }
-            return name
+            return item.civitai_info.name
         },
         loraExists(name) {
             if (typeof this.loras !== 'object') return name
