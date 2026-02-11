@@ -22,15 +22,6 @@ export default {
                 if (!this.groupTagsActive || !this.subGroupTagsActive) {
                     this.groupTagsActive = 'favorite'
                     this.subGroupTagsActive = 'favorite-' + this.favoriteKey
-                    /*for (let item of this.groupTags) {
-                        this.groupTagsActive = item.tabKey
-                        for (let group of item.groups) {
-                            if (group.type && group.typ == 'wrap') continue
-                            this.subGroupTagsActive = group.tabKey
-                            break
-                        }
-                        break
-                    }*/
                 }
                 this._setGroupTagItemWidth()
             },

@@ -40,20 +40,6 @@ export default {
     name: 'About',
     components: {IconSvg},
     mixins: [],
-    /*props: {
-        version: {
-            type: String,
-            default: '',
-        },
-        latestVersion: {
-            type: String,
-            default: '',
-        },
-        isLatestVersion: {
-            type: Boolean,
-            default: true,
-        },
-    },*/
     data() {
         return {
             version: '',

@@ -20,23 +20,6 @@ export default {
                     "icon": "wrap",
                     "children": []
                 },
-                /*{
-                    "type": "lora",
-                    "name": "Lora",
-                    "children": []
-                },*/
-                /*{
-                    "type": "favorite",
-                    "name": "favorite",
-                    "icon": "favorite",
-                    "children": []
-                },
-                {
-                    "type": "history",
-                    "name": "history",
-                    "icon": "history",
-                    "children": []
-                }*/
             ],
 
             favorites: [],
@@ -80,36 +63,17 @@ export default {
                 'neg': true,
             },
         ]
-        /*for (let i = 0; i < temp.length; i++) {
-            if (temp[i].key === this.favoriteKey) {
-                // 排到第一位
-                let item = temp[i]
-                temp.splice(i, 1)
-                temp.unshift(item)
-                break
-            }
-        }*/
         temp.forEach(item => {
             if (item.neg !== this.neg) return
             this.appendList.push({
                 'type': "favorite",
-                'name': ["favorite", item.name/*, item.type*/],
+                'name': ["favorite", item.name],
                 "icon": "favorite",
                 "key": item.key,
                 'dataKey': 'favorite.' + item.key,
                 "children": [],
             })
         })
-        /*temp.forEach(item => {
-            this.appendList.push({
-                'type': "history",
-                'name': ["history", item.name, item.type],
-                "icon": "history",
-                "key": item.key,
-                'dataKey': 'history.' + item.key,
-                "children": [],
-            })
-        })*/
     },
     methods: {
         onUnfoldClick() {
@@ -165,18 +129,6 @@ export default {
                         item.children.reverse()
                     })
                 })
-                /*this.gradioAPI.getFavorites(this.favoriteKey).then(res => {
-                    this.appendList.forEach(item => {
-                        if (item.type !== 'favorite') return
-                        item.children = res
-                    })
-                })
-                this.gradioAPI.getHistories(this.historyKey).then(res => {
-                    this.appendList.forEach(item => {
-                        if (item.type !== 'history') return
-                        item.children = res
-                    })
-                })*/
             }
             this._setTextareaFocus()
         },

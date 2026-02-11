@@ -216,13 +216,6 @@ export default {
             let url = this.getCivitaiUrl(this.data.modelId)
             window.open(url)
         },
-        /*onUseKeywordsClick() {
-            if (!this.data.trainedWords || !this.data.trainedWords.length) return
-            if (!this.useCallback) return
-            if (typeof this.useCallback !== 'function') return
-            this.useCallback(this.data.trainedWords)
-            this.$toastr.success(this.getLang('success'))
-        },*/
         onUseKeywordsClick(value) {
             if (!value) return
             if (typeof this.useCallback !== 'function') return

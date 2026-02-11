@@ -1876,13 +1876,6 @@ export default {
             });
           }
         },
-        /*onSpill: function (evt) {
-                    evt.item // The spilled item
-                }*/
-        /*multiDrag: true, // Enable the plugin
-                selectedClass: "sortable-selected", // Class name for selected item
-                multiDragKey: 'SHIFT', // Key that must be down for items to be selected
-                avoidImplicitDeselect: false,*/
       });
     },
     useHistory(history) {

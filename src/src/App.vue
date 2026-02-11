@@ -532,18 +532,6 @@ export default {
       },
       immediate: false,
     },
-    /*hideDefaultInput: {
-            handler: function (val, oldVal) {
-                if (!this.startWatchSave) return
-                this.prompts.forEach(item => {
-                    item.$prompt.parentElement.parentElement.style.display = val ? 'none' : 'flex'
-                })
-                this.gradioAPI.setData('hideDefaultInput', val).then(data => {
-                }).catch(err => {
-                })
-            },
-            immediate: false,
-        },*/
     enableTooltip: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
@@ -725,7 +713,6 @@ export default {
         "autoRemoveBeforeLineComma",
         "autoFormatCategorySpacing",
         "autoRemoveCategoryTrailingComma",
-        /*'hideDefaultInput', */
         "enableTooltip",
         "enableNativeHighlighting",
         "extensionSelect.minimalist",
@@ -782,9 +769,6 @@ export default {
           this.autoRemoveCategoryTrailingComma =
             data.autoRemoveCategoryTrailingComma;
         }
-        /*if (data.hideDefaultInput !== null) {
-                    this.hideDefaultInput = data.hideDefaultInput
-                }*/
         if (data.enableTooltip !== null) {
           this.enableTooltip = data.enableTooltip;
         }
@@ -1291,11 +1275,7 @@ export default {
       this.$refs.about.open();
     },
     onSwitchTheme() {
-      /*if (common.gradioApp().classList.contains(this.theme)) {
-                common.gradioApp().classList.remove(this.theme)
-            }*/
       this.theme = this.theme === "dark" ? "light" : "dark";
-      // 判断当前 url 是否有参数 __theme，如果有则替换，没有则添加
       let currentUrl = window.location.href;
       let url = new URL(currentUrl);
       let params = new URLSearchParams(url.search);
@@ -1305,9 +1285,6 @@ export default {
         params.append("__theme", this.theme);
       }
       let newUrl = url.origin + url.pathname + "?" + params.toString();
-      /*if (!common.gradioApp().classList.contains(this.theme)) {
-                common.gradioApp().classList.add(this.theme)
-            }*/
       window.location.href = newUrl;
     },
     _handleBlacklist(blacklist) {

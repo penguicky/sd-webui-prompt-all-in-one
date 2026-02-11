@@ -21,10 +21,6 @@ export default {
     this._heightRafId = null;
   },
   mounted() {
-    /*common.gradioApp().addEventListener('mousemove', () => {
-            this.$refs.highlightPrompt.hide()
-        })*/
-
     // Set up event listeners for category term hover detection
     this.$nextTick(() => {
       this._setupCategoryTermHoverListeners();
@@ -592,11 +588,7 @@ export default {
         );
       }
     },
-    onTagMouseMove(id) {
-      /*let tag = this.tags.find(tag => tag.id === id)
-            if (!tag) return false
-            this.$refs.highlightPrompt.show(tag)*/
-    },
+    onTagMouseMove(id) {},
     onTagMouseLeave(id) {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return false;
