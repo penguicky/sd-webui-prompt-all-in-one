@@ -16,7 +16,7 @@
                         <div v-if="tag.type && tag.type === 'wrap'" class="item-wrap"></div>
                         <div v-else class="item-tag">
                             <div class="item-tag-value">{{ tag.value }}</div>
-                            <div class="item-tag-local-value">{{ tag.localValue }}</div>
+                            <div class="item-tag-local-value"></div>
                         </div>
                     </template>
                 </div>

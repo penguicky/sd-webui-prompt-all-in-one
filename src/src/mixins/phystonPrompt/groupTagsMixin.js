@@ -219,7 +219,7 @@ export default {
         },
         onClickGroupTagFavorite(favorite) {
             favorite.tags.forEach((tag) => {
-                this._appendTag(tag.value, tag.localValue, tag.disabled, -1, tag.type)
+                this._appendTag(tag.value, "", tag.disabled, -1, tag.type)
             })
             this.updateTags()
         },
@@ -286,14 +286,8 @@ export default {
                 })
                 this.updateTags()
             } else {
-                let index = this._appendTag(JSON.parse(data.prompt), '', false, -1, 'text')
-                if (this.autoTranslateToLocal) {
-                    this.translates([index], true, false).finally(() => {
-                        this.updateTags()
-                    })
-                } else {
-                    this.updateTags()
-                }
+                this._appendTag(JSON.parse(data.prompt), '', false, -1, 'text')
+                this.updateTags()
             }
         },
         getGroupTagTooltip(local, en) {

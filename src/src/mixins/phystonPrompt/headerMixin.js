@@ -120,44 +120,6 @@ export default {
             }
             this.$emit("update:hidePanel", !this.hidePanel)
         },
-        onTranslatesToLocalClick() {
-            if (this.tags.length === 0) return // 没有关键词需要翻译
-            if (this.loading['all_local']) {
-                // 正在翻译中，取消翻译
-                this.cancelMultiTranslate = true
-                this.loading['all_local'] = false
-                return
-            }
-            this.loading['all_local'] = true
-            let tagIndexes = []
-            for (const index in this.tags) {
-                if (this.tags[index].type && this.tags[index].type !== 'text') continue
-                tagIndexes.push(index)
-            }
-            return this.translates(tagIndexes, true, true).finally(() => {
-                this.loading['all_local'] = false
-                this.updateTags()
-            })
-        },
-        onTranslatesToEnglishClick() {
-            if (this.tags.length === 0) return // 没有关键词需要翻译
-            if (this.loading['all_en']) {
-                // 正在翻译中，取消翻译
-                this.cancelMultiTranslate = true
-                this.loading['all_en'] = false
-                return
-            }
-            this.loading['all_en'] = true
-            let tagIndexes = []
-            for (const index in this.tags) {
-                if (this.tags[index].type && this.tags[index].type !== 'text') continue
-                tagIndexes.push(index)
-            }
-            this.translates(tagIndexes, false, true).finally(() => {
-                this.loading['all_en'] = false
-                this.updateTags()
-            })
-        },
         onCopyAllTagsClick() {
             this.copy(this.prompt)
         },
@@ -274,20 +236,12 @@ export default {
                 })
             }
         },
-        onAppendTagKeyDown(e, localValue = null) {
+        onAppendTagKeyDown(e, fromAutocomplete = false) {
             if (e.keyCode === 38 || e.keyCode === 40) {
             } else if (e.keyCode === 13) {
                 if (this.getAutocompleteResults() && ((this.autocompleteResultsParent && this.autocompleteResultsParent.style.display === 'flex') || this.autocompleteResults.style.display === 'none') && this.getAutocompleteResultsSelected()) {
-                    let text = this.getAutocompleteResultsSelectedText()
                     setTimeout(() => {
-                        localValue = this.$refs.promptTagAppend.value
-                        if (text) {
-                            localValue = text
-                        } else {
-                            text = this.getAutocompleteResultsSelectedText()
-                            if (text) localValue = text
-                        }
-                        this.onAppendTagKeyDown(e, localValue)
+                        this.onAppendTagKeyDown(e, true)
                     }, 300)
                     return
                 }
@@ -295,19 +249,16 @@ export default {
                 let tags = this.$refs.promptTagAppend.value
                 this.$refs.promptTagAppend.value = ''
                 this.showAppendList = true
-                // [night light:magical forest: 5, 15]
-                console.log(tags, localValue)
-                if (localValue) {
-                    // 去除末尾的逗号
+                if (fromAutocomplete) {
+                    // From autocomplete: treat entire input as single tag (don't split by comma)
                     tags = tags.replace(/\s*,\s*$/, '').trim()
                     if (common.hasBrackets(tags)) {
                         tags = common.replaceBrackets(tags)
                     }
-                    this._appendTag(tags, localValue)
+                    this._appendTag(tags)
                     this.updateTags()
                 } else {
                     if (common.hasBrackets(tags)) {
-                        // 如果已经被英文括号括起来，那么就不需要再分词了
                         tags = common.replaceBrackets(tags)
                         tags = [tags]
                     } else {
@@ -323,32 +274,11 @@ export default {
                         }
                         if (index !== -1) indexes.push(index)
                     })
-                    this.autoTranslateByIndexes(indexes)
+                    this.updatePrompt()
+                    this.updateTags()
                 }
             } else {
-                // 不是上下键，也不是回车
                 this.removeAutocompleteResultsSelected()
-            }
-        },
-        autoTranslateByIndexes(indexes) {
-            this.updatePrompt() // 先更新再翻译
-            if (this.autoTranslateToEnglish || this.autoTranslateToLocal) {
-                this.$nextTick(() => {
-                    let useNetwork = !(this.tagCompleteFile && this.onlyCsvOnAuto)
-                    if (this.autoTranslateToEnglish) {
-                        // 如果开启了自动翻译到英语，那么就自动翻译
-                        this.translates(indexes, false, useNetwork).finally(() => {
-                            this.updateTags()
-                        })
-                    } else if (this.autoTranslateToLocal) {
-                        // 如果开启了自动翻译到本地语言，那么就自动翻译
-                        this.translates(indexes, true, useNetwork).finally(() => {
-                            this.updateTags()
-                        })
-                    }
-                })
-            } else {
-                this.updateTags()
             }
         },
         onAppendTagKeyUp(e) {
@@ -425,7 +355,6 @@ export default {
                 case 'wrap':
                     appendTags.push({
                         value: "\n",
-                        localValue: "\n",
                         disabled: false,
                         type: 'wrap'
                     })
@@ -438,7 +367,6 @@ export default {
                         appendChildItem.tags.forEach(tag => {
                             appendTags.push({
                                 value: tag.value,
-                                localValue: tag.localValue,
                                 disabled: tag.disabled,
                                 type: tag.type || 'text'
                             })
@@ -448,7 +376,7 @@ export default {
             }
             if (appendTags.length <= 0) return
             appendTags.forEach(tag => {
-                this._appendTag(tag.value, tag.localValue, tag.disabled, -1, tag.type)
+                this._appendTag(tag.value, "", tag.disabled, -1, tag.type)
             })
             this.updateTags()
         },

@@ -46,9 +46,6 @@
         @click:blacklist="onBlacklistClick"
         @click:hotkey="onHotkeyClick"
         @click:syntax-highlighting-settings="onSyntaxHighlightingSettingsClick"
-        v-model:tag-complete-file="tagCompleteFile"
-        v-model:only-csv-on-auto="onlyCsvOnAuto"
-        v-model:group-tags-translate="groupTagsTranslate"
         @click:select-theme="onSelectThemeClick"
 
         :extra-networks="extraNetworks"
@@ -66,7 +63,6 @@
         v-model:group-tags-color="groupTagsColor"
         :group-tags-color-key-cache="groupTagsColorKeyCache"
         @update:hide-group-tags="onUpdateHideGroupTags(item.id, $event)"
-        :group-tags-translate-cache="groupTagsTranslateCache"
         v-model:extra-networks-width="extraNetworksWidth"
         v-model:extra-networks-height="extraNetworksHeight"
         :blacklist="blacklist"
@@ -107,15 +103,11 @@
     ></hotkey>
     <history
       ref="history"
-      v-model:tag-complete-file="tagCompleteFile"
-      v-model:only-csv-on-auto="onlyCsvOnAuto"
       @refresh-favorites="onRefreshFavorites"
       @use="onUseHistory"
     />
     <favorite
       ref="favorite"
-      v-model:tag-complete-file="tagCompleteFile"
-      v-model:only-csv-on-auto="onlyCsvOnAuto"
       @use="onUseFavorite"
     ></favorite>
     <extension-css
@@ -339,8 +331,6 @@ export default {
       // hideDefaultInput: false,
       enableTooltip: true,
       enableNativeHighlighting: true,
-      tagCompleteFile: "",
-      onlyCsvOnAuto: false,
 
       startWatchSave: false,
 
@@ -371,11 +361,6 @@ export default {
       groupTags: [],
       groupTagsColor: {},
       groupTagsColorKeyCache: {},
-      groupTagsTranslate: true,
-      groupTagsTranslateCache: {
-        toEn: new Map(),
-        toLocal: new Map(),
-      },
       extraNetworksWidth: 100,
       extraNetworksHeight: 120,
 
@@ -588,17 +573,6 @@ export default {
       immediate: false,
     },
 
-    tagCompleteFile: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        console.log("onTagCompleteFileChange", val, oldVal);
-        this.gradioAPI
-          .setData("tagCompleteFile", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
     groupTagsColor: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
@@ -610,25 +584,6 @@ export default {
       },
       deep: true,
       immediate: false,
-    },
-    groupTagsTranslate: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        console.log("onGroupTagsTranslateChange", val, oldVal);
-        this.gradioAPI
-          .setData("groupTagsTranslate", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    onlyCsvOnAuto() {
-      if (!this.startWatchSave) return;
-      console.log("onOnlyCsvOnAutoChange", this.onlyCsvOnAuto);
-      this.gradioAPI
-        .setData("onlyCsvOnAuto", this.onlyCsvOnAuto)
-        .then((data) => {})
-        .catch((err) => {});
     },
     extraNetworksWidth() {
       if (!this.startWatchSave) return;
@@ -796,11 +751,8 @@ export default {
         /*'hideDefaultInput', */
         "enableTooltip",
         "enableNativeHighlighting",
-        "tagCompleteFile",
-        "onlyCsvOnAuto",
         "extensionSelect.minimalist",
         "groupTagsColor",
-        "groupTagsTranslate",
         "blacklist",
         "cancelBlacklistConfirm",
         "hotkey",
@@ -867,25 +819,6 @@ export default {
           this.enableTooltip ? "true" : "false"
         );
         this.updateTippyState();
-        // Translation functionality removed
-        if (data.tagCompleteFile !== null) {
-          this.tagCompleteFile = data.tagCompleteFile;
-          waitTick.addWaitTick(() => {
-
-          });
-        } else {
-          /*if (typeof TAC_CFG === 'object' && typeof QUEUE_FILE_LOAD === 'object') {
-                        QUEUE_FILE_LOAD.push(() => {
-                            if (typeof TAC_CFG.translation !== 'object' || typeof TAC_CFG.translation.translationFile !== 'string') return
-                            if (!TAC_CFG.translation.translationFile) return
-                            this.tagCompleteFile = '\\extensions\\a1111-sd-webui-tagcomplete\\tags\\' + TAC_CFG.translation.translationFile
-
-                        })
-                    }*/
-        }
-        if (data.onlyCsvOnAuto !== null) {
-          this.onlyCsvOnAuto = data.onlyCsvOnAuto;
-        }
 
         if (data["extensionSelect.minimalist"] === null) {
           this.gradioAPI.setData("extensionSelect.minimalist", true);
@@ -899,10 +832,6 @@ export default {
               this.groupTagsColor[key] = ref(common.fitterInputColor(color));
             }
           }
-        }
-
-        if (data.groupTagsTranslate !== null) {
-          this.groupTagsTranslate = data.groupTagsTranslate;
         }
 
         if (data.blacklist !== null) {
@@ -1032,22 +961,6 @@ export default {
       });
     },
     _handleGroupTags() {
-      let data = { toEn: new Map(), toLocal: new Map() };
-      let setData = (en, local) => {
-        const texts = [en, en.replace(/\_/g, " "), en.replace(/\-/g, " ")];
-        texts.forEach((t) => {
-          if (data.toLocal.has(t)) {
-            let oldLocal = data.toLocal.get(t);
-            if (!oldLocal.includes(local)) {
-              oldLocal.push(local);
-            }
-          } else {
-            data.toLocal.set(t, [local]);
-          }
-        });
-        data.toEn.set(local, en);
-        // console.log('setData:groupTags', local, key, en)
-      };
       this.groupTags.forEach((item, index) => {
         item.type = item.type || "";
         item.tabKey = "groupTags-" + index;
@@ -1064,15 +977,9 @@ export default {
           for (let en in group.tags) {
             if (!en) continue;
             this.groupTagsColorKeyCache[en] = key;
-
-            let local = group.tags[en];
-            if (!local || en == local) continue;
-            setData(en, local);
           }
         });
       });
-
-      this.groupTagsTranslateCache = data;
     },
     updateTippyState() {
       for (const $tippy of this.$tippyList) {
@@ -1479,9 +1386,6 @@ export default {
         ?.slice()
         .map((item) => item.toLowerCase());
       blacklist.embedding = blacklist.embedding
-        ?.slice()
-        .map((item) => item.toLowerCase());
-      blacklist.translate = blacklist.translate
         ?.slice()
         .map((item) => item.toLowerCase());
       return blacklist;

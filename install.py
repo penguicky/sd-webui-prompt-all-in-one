@@ -7,14 +7,7 @@ packages = {
     "lxml": "lxml",
     "tqdm": "tqdm",
     "pathos": "pathos",
-    "cryptography": "cryptography"
-
-#     # The following packages are required for translation service. If you do not need translation service, you can remove them.
-#     # 以下是翻译所需的包，如果不需要翻译服务，可以删除掉它们。
-#     "openai": "openai",
-#     "boto3": "boto3",
-#     "aliyunsdkcore": "aliyun-python-sdk-core",
-#     "aliyunsdkalimt": "aliyun-python-sdk-alimt",
+    "cryptography": "cryptography",
 }
 
 if __name__ == "__main__":

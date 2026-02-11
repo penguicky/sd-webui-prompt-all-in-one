@@ -142,24 +142,6 @@ export default {
     },
 
     /**
-     * 是否可以翻译
-     * @param text {string}
-     * @returns {boolean}
-     */
-    canTranslate(text) {
-        // 如果为空，不翻译
-        if (text.trim() === '') return false
-        // 如果<>包裹，不翻译
-        if (text[0] === '<' && text[text.length - 1] === '>') return false
-        // 如果是数字、标点符号，不翻译
-        const regex = /^[0-9`~!@#$%^&*()_+\-=\[\]{}\\|;:'",.\/<>?]+$/
-        if (regex.test(text)) return false
-        // 如果是单个英文字母，不翻译
-        if (/^[a-zA-Z]$/.test(text)) return false
-        return true
-    },
-
-    /**
      * 判断是否是英文
      * @param text {string}
      * @returns {boolean}
@@ -212,17 +194,10 @@ export default {
         "increase_weight_subtract_parentheses": "Increase Keyword Weight: Subtract ()",
         "decrease_weight_add_brackets": "Decrease Keyword Weight: Add []",
         "decrease_weight_subtract_brackets": "Decrease Keyword Weight: Subtract []",
-        "translate_keyword_to_local_language": "Translate Keyword to Local Language",
         "copy_to_clipboard": "Copy to Clipboard",
         "disable_keyword": "Disable Keyword",
         "enable_keyword": "Enable Keyword",
         "copy_keywords_to_clipboard": "Copy All Keywords to Clipboard",
-        "translate_keywords_to_local_language": "Translate All Keywords to Local Language",
-        "translate_keyword_to_english": "Translate to English",
-        "translate_all_keywords_to_english": "Translate All Non-English Keywords to English",
-        "auto_translate_to_english": "Automatically Translate to English After Entering New Keyword",
-        "auto_translate_to_local_language": "Automatically Translate to Local Language After Entering New Keyword",
-        "translate_api": "Translation API",
         "history": "History",
         "clear_history": "Clear History",
         "clear_history_confirm": "Are you sure you want to clear the history?",
@@ -236,9 +211,7 @@ export default {
         "drop_to_order": "Hold Down Left Mouse Button to Drag and Sort",
         "enter_to_save": "Press Enter to Save Keyword",
         "enter_to_add": "Press Enter to Add Keyword",
-        "translate_api_not_found": "Translation API Not Found",
-        "translate_language_not_support": "Translation Language Not Supported",
-        "translate_api_not_support": "Translation API Not Supported",
+
         "unset_name": "Name Not Set",
         "no_history": "No History",
         "get_history_error": "Failed to Get History",
@@ -246,7 +219,6 @@ export default {
         "get_favorite_error": "Failed to Get Favorites",
         "hide_default_input_box": "Hide Default Input Box",
         "show_default_input_box": "Show Default Input Box",
-        "translate_test": "Translate Test",
         "close": "Close",
         "save": "Save",
         "delete_all_keywords": "Delete All Keywords",
@@ -256,27 +228,20 @@ export default {
         "delete_all_history": "Delete All History",
         "delete_all_history_confirm": "Are you sure you want to delete all history?",
         "please_enter_the_content_here": "Please enter content",
-        "not_api_key_desc": "Free translation interfaces are unstable, and not every interface can be used on your computer. Please apply for an API Key to use the stable official interface.",
-        "setting_desc": "Settings: Translation API, automatic translation, show/hide...",
+        "setting_desc": "Settings: show/hide...",
         "line_break_character": "Line break character",
-        "tagcomplete_translate_desc": "<p>Enhance translation function using danbooru.csv in {{nameTagComplete}} extension to achieve the purpose of saving network requests and accurate translation.</p><p>After clicking the refresh button, csv files from the following paths will be scanned: <p>extensions\\{{shortNameTagComplete}}\\tags</p><p>extensions\\{{shortName}}\\tags</p></p><p>You can download csv files from git repository <a target='_blank' href='{{githubAssets}}/tree/main/tags'>{{nameAssets}}/tags</a>.</p>",
         "test": "Test",
         "refresh": "Refresh",
         "not_enable": "Not enable",
-        "translate_result": "The translation result of {0} is: {1}",
-        "not_found_csv_file": "Csv file not found",
         "theme_extension": "Theme: Extension Plugin Style",
         "is_remove_space": "Whether to remove the spaces after each comma in the keyword.<br/>Checking will automatically remove the spaces (difficult to read).<br/>Unchecking will keep one space (affecting TOKEN count).",
         "theme": "Theme",
         "enhance": "Enhance",
-        "only_csv_on_auto": "Automatic translation uses only CSV translation (not network translation). To use both CSV and network translation, click the translate button manually.",
-        "one_translate_all_keywords": "Translate all keywords in one click",
-        "auto_translate": "Automatically translate after entering new keywords",
+
         "is_remove_last_comma": "Remove the last comma in Prompt or not.<br/>When selected, Prompt output is \"aaa,bbb,ccc\".<br/>When unselected, Prompt output is \"aaa,bbb,ccc,\".",
         "is_keep_weight_zero": "Keep the format of keywords with a weight of 0 or not.<br/>When selected, the keyword format is kept as \"(text:0)\".<br/>When unselected, the format is not kept as \"test\".",
         "is_keep_weight_one": "Keep the format of keywords with a weight of 1 or not.<br/>When selected, the keyword format is kept as \"(text:1)\".<br/>When unselected, the format is not kept as \"test\".",
         "prompt_format": "Prompt Format",
-        "tagcomplete_translate_desc2": "Selecting the wrong CSV file will result in an empty or '0' translation. After changing the file, please click the test button below and check if the translated result is correctly displayed in your local language.",
         "dblclick_to_disable": "Double-click to disable/enable keyword",
         "batch_operation": "Batch operation",
         "success": "Success!",
@@ -308,7 +273,6 @@ export default {
         "response_error": "{0} response error!",
         "install_success": "{0} installed successfully!",
         "install_failed": "Error: {0} installation failed!",
-        "translate_text_is_empty": "Translation text is empty!",
         "about_desc": "About, Updates, Help, Documentation",
         "version": "Version",
         "unknown_version": "Unknown Version",
@@ -316,14 +280,6 @@ export default {
         "wiki_desc": "Installation tutorial, detailed features, usage instructions, frequently asked questions, etc. See:",
         "switch_to_light_theme": "Switch to Light Theme",
         "switch_to_dark_theme": "Switch to Dark Theme",
-        "offline_api": "Offline Translation",
-        "initialize": "Initialize",
-        "initialize_finished": "Initialization Finished!",
-        "initialize_failed": "Initialization Failed!",
-        "model_not_initialized": "Model Not Initialized",
-        "model_is_loading": "Model is Loading...",
-        "download_model_desc": "<p>If the model has not been downloaded before, the program will automatically download the model from Hugging Face.</p><p>The model is several gigabytes in size and requires a high-speed internet connection.</p><p>The download may take a while, please be patient. If the download fails, please reinitialize.</p><p>You can check detailed logs and progress in the console.</p><p>The model files will be downloaded to the directory: extensions\\{{shortName}}\\models</p>",
-        "download_model_desc2": "<p class='common-red'>If you do not have a good network environment or need to download offline, please view:</p><p><a href='{{docs}}/OfflineTranslation.html' target='_blank'>{{docs}}/OfflineTranslation.html</a></p>",
         "auto_input_prompt": "Auto-fill prompt when the webpage loads",
         "disabled": "Disabled",
         "last_input_prompt": "Last input prompt",
@@ -346,8 +302,6 @@ export default {
         "embedding_blacklist_list": "Embedding Blacklist",
         "one_keyword_per_line": "One keyword per line",
         "Keyword_group": "Keyword Group",
-        "enhance_translation_use_keyword_group": "Enhance Translation with Keyword Group",
-        "enhance_translation_use_Keyword_group_desc": "<p>The keyword group file is located in the group_tags directory.</p><p>When this feature is enabled, the contents in the YAML file are prioritized for translation matching. If no match is found, the translation interface is used.</p><p>You can visit <a href='https://aiodoc.physton.com/GroupTags.html' target='_blank'>https://aiodoc.physton.com/GroupTags.html</a> for specific instructions on the files in the group_tags directory.</p>",
         "hotkey_setting": "Hotkey Setting",
         "syntax_highlighting_settings": "Syntax Highlighting Settings",
         "color_settings": "Color Settings",
@@ -379,8 +333,6 @@ export default {
         "description": "Description",
         "open_civitai": "Open Civitai",
         "use_keywords": "Use Keywords",
-        "translate_blacklist_desc": "Set as forbidden words for translation, the plugin will not translate them!",
-        "disable_translate_prompt_blacklist_list": "List of prompt words for translation disable",
         "width": "Width",
         "height": "Height",
         "move_up": "Move Up",
@@ -518,25 +470,6 @@ export default {
         if (num === 0) return str
         // 如果层数大于0，那么在字符串的前面加上num个start，后面加上num个end
         return start.repeat(num) + str + joinStr + end.repeat(num)
-    },
-
-    /**
-     * 获取翻译api信息
-     * @param key {string}
-     * @param api {object}
-     * @returns {boolean}
-     */
-    getTranslateApiInfo(key, api) {
-        let find = false
-        for (const group in api) {
-            for (const item in group.children) {
-                if (item.key === key) {
-                    find = item
-                    break
-                }
-            }
-        }
-        return find
     },
 
     /**

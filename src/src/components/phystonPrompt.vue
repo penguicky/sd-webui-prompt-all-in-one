@@ -391,7 +391,6 @@
                         <div v-else class="tags-item">
                           <div class="item-tag-value">{{ tag.value }}</div>
                           <div class="item-tag-local-value">
-                            {{ tag.localValue }}
                           </div>
                         </div>
                       </template>
@@ -1422,7 +1421,6 @@ export default {
           const wrapTag = {
             id,
             value: "\n",
-            localValue: "\n",
             disabled: false,
             type: "wrap"
           };
@@ -1431,14 +1429,12 @@ export default {
         } else {
           // Use map for faster lookup
           const existingTag = oldTagsMap.get(tag);
-          const localValue = existingTag ? existingTag.localValue : "";
           const disabled = existingTag ? existingTag.disabled : false;
 
           const id = Date.now() + (Math.random() * 1000000).toFixed(0) + i;
           const textTag = {
             id,
             value: tag,
-            localValue: localValue,
             disabled: disabled,
             type: "text"
           };
@@ -1531,23 +1527,12 @@ export default {
             return;
           }
 
-          let localValue = common.replaceTag(tag.localValue);
-          if (localValue !== tag.localValue) {
-            tag.localValue = localValue;
-          }
-
           if (tag.weightNum > 0 || tag.weightNum < 0) {
             tag.weightNum = Number(parseFloat(tag.weightNum).toFixed(6));
             tag.value = tag.value.replace(
               common.weightNumRegex,
               "$1:" + tag.weightNum
             );
-            if (tag.localValue !== "") {
-              tag.localValue = tag.localValue.replace(
-                common.weightNumRegex,
-                "$1:" + tag.weightNum
-              );
-            }
           }
           if (tag.disabled && !ignoreDisabled) return;
 
@@ -1940,7 +1925,7 @@ export default {
       history.tags.forEach((item) => {
         this._appendTag(
           item.value,
-          item.localValue,
+          "",
           item.disabled,
           -1,
           item.type || "text"

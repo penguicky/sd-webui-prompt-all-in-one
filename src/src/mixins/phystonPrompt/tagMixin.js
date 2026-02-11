@@ -199,11 +199,10 @@ export default {
       tag.classes = classes;
       return classes;
     },
-    _setTagById(id, value = null, localValue = null) {
+    _setTagById(id, value = null) {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return false;
       if (value !== null) tag.value = value;
-      if (localValue !== null) tag.localValue = localValue;
       return tag;
     },
     _isTagBlacklist(tag) {
@@ -234,7 +233,7 @@ export default {
     },
     _appendTag(
       value,
-      localValue = "",
+      _localValue = "",
       disabled = false,
       index = -1,
       type = "text"
@@ -246,12 +245,6 @@ export default {
         id,
         value:
           value === null || value === undefined || value === false ? "" : value,
-        localValue:
-          localValue === null ||
-          localValue === undefined ||
-          localValue === false
-            ? ""
-            : localValue,
         disabled,
         type,
       };
@@ -578,7 +571,8 @@ export default {
         }
       }
       if (indexes.length) {
-        this.autoTranslateByIndexes(indexes);
+        this.updatePrompt();
+        this.updateTags();
       }
     },
     onTagMouseEnter(id) {
@@ -744,7 +738,6 @@ export default {
       if (tag.weightNum == e) return;
       let weightNum = e;
       let value = tag.value;
-      let localValue = tag.localValue;
       if (weightNum !== 0) {
         if (weightNum === 1 && !this.autoKeepWeightOne) {
           // 如果权重数是1，那么就去掉权重数
@@ -757,20 +750,11 @@ export default {
           ) {
             // 移除括号
             value = common.setLayers(value, 0, bracket[0], bracket[1]);
-            if (localValue !== "")
-              localValue = common.setLayers(
-                localValue,
-                0,
-                bracket[0],
-                bracket[1]
-              );
           } else {
             // 不移除括号
           }
           // 移除权重数
           value = value.replace(common.weightNumRegex, "$1");
-          if (localValue !== "")
-            localValue = localValue.replace(common.weightNumRegex, "$1");
         } else {
           // 如果原来没有权重数，那么就加上权重数
           if (!common.weightNumRegex.test(value)) {
@@ -784,17 +768,8 @@ export default {
                 bracket[1],
                 ":" + weightNum
               );
-              if (localValue !== "")
-                localValue = common.setLayers(
-                  localValue,
-                  1,
-                  bracket[0],
-                  bracket[1],
-                  ":" + weightNum
-                );
             } else {
               value = value + ":" + weightNum;
-              if (localValue !== "") localValue = localValue + ":" + weightNum;
             }
           }
           // 排除Lora、lyco (但包含embedding，因为embedding需要标准权重语法)
@@ -805,37 +780,22 @@ export default {
             // 对于embeddings和常规terms，添加标准权重括号
             if (this.useNovelAiWeightSymbol) {
               value = common.setLayers(value, 1, "{", "}");
-              if (localValue !== "")
-                localValue = common.setLayers(localValue, 1, "{", "}");
             } else {
               value = common.setLayers(value, 1, "(", ")");
-              if (localValue !== "")
-                localValue = common.setLayers(localValue, 1, "(", ")");
             }
           }
         }
         if (value !== tag.value) {
           tag.value = value;
-          if (localValue !== "") tag.localValue = localValue;
           this._setTag(tag);
         }
       } else {
         if (this.autoKeepWeightZero) {
           // 保留权重数
           tag.value = value.replace(common.weightNumRegex, "$1:0");
-          if (localValue !== "")
-            tag.localValue = tag.localValue.replace(
-              common.weightNumRegex,
-              "$1:0"
-            );
         } else {
           // 移除权重数
           tag.value = value.replace(common.weightNumRegex, "$1");
-          if (localValue !== "")
-            tag.localValue = tag.localValue.replace(
-              common.weightNumRegex,
-              "$1"
-            );
         }
       }
       tag.weightNum = weightNum;
@@ -880,7 +840,7 @@ export default {
             this.favoriteKey,
             [tag],
             tag.value,
-            tag.localValue === "" ? tag.value : tag.localValue
+            tag.value
           )
           .then((res) => {
             if (res) {
@@ -928,14 +888,9 @@ export default {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return;
       let value = tag.value;
-      let localValue = tag.localValue;
       value = common.setLayers(value, 0, "[", "]");
-      if (localValue !== "")
-        localValue = common.setLayers(localValue, 0, "[", "]");
       if (this.useNovelAiWeightSymbol) {
         value = common.setLayers(value, 0, "(", ")");
-        if (localValue !== "")
-          localValue = common.setLayers(localValue, 0, "(", ")");
       }
       let incWeight = tag.incWeight;
       incWeight += num;
@@ -944,15 +899,10 @@ export default {
       tag.decWeight = 0;
       if (this.useNovelAiWeightSymbol) {
         value = common.setLayers(value, incWeight, "{", "}");
-        if (localValue !== "")
-          localValue = common.setLayers(localValue, incWeight, "{", "}");
       } else {
         value = common.setLayers(value, incWeight, "(", ")");
-        if (localValue !== "")
-          localValue = common.setLayers(localValue, incWeight, "(", ")");
       }
       tag.value = value;
-      if (localValue !== "") tag.localValue = localValue;
       this.updateTagsDebounced(100);
     },
     onDecWeightClick(id, num) {
@@ -969,14 +919,9 @@ export default {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return;
       let value = tag.value;
-      let localValue = tag.localValue;
       value = common.setLayers(value, 0, "(", ")");
-      if (localValue !== "")
-        localValue = common.setLayers(localValue, 0, "(", ")");
       if (this.useNovelAiWeightSymbol) {
         value = common.setLayers(value, 0, "{", "}");
-        if (localValue !== "")
-          localValue = common.setLayers(localValue, 0, "{", "}");
       }
       let decWeight = tag.decWeight;
       decWeight += num;
@@ -984,10 +929,7 @@ export default {
       tag.incWeight = 0;
       tag.decWeight = decWeight;
       value = common.setLayers(value, decWeight, "[", "]");
-      if (localValue !== "")
-        localValue = common.setLayers(localValue, decWeight, "[", "]");
       tag.value = value;
-      if (localValue !== "") tag.localValue = localValue;
       this.updateTagsDebounced(100);
     },
     onWrapTagClick(id) {
@@ -1001,24 +943,6 @@ export default {
       // 然后将 'c' 插入到 'e' 后面
       this.tags.splice(index + 1, 0, wrapTag);
       this.updateTags();
-    },
-    onTranslateToLocalClick(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
-      if (!tag) return;
-      let index = this.tags.indexOf(tag);
-      if (this.loading[tag.id + "_local"]) return;
-      this.translates([index], true, true).finally(() => {
-        this.updateTags();
-      });
-    },
-    onTranslateToEnglishClick(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
-      if (!tag) return;
-      let index = this.tags.indexOf(tag);
-      if (this.loading[tag.id + "_en"]) return;
-      this.translates([index], false, true).finally(() => {
-        this.updateTags();
-      });
     },
     onBlacklistClick(id) {
       let tag = this.tags.find((tag) => tag.id === id);
@@ -1228,7 +1152,6 @@ export default {
       const virtualTag = {
         id: `category-term-${tag.id}-${termIndex}`,
         value: termValue,
-        localValue: "",
         weightNum: this._getCategoryTermWeight(termValue),
         incWeight: 0,
         decWeight: 0,
