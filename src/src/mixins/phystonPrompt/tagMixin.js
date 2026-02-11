@@ -55,7 +55,6 @@ export default {
           this.useNovelAiWeightSymbol
         );
         tag.decWeight = common.getTagDecWeight(tag.value);
-        // const bracket = common.hasBrackets(tag.value)
 
         tag.originalValue = tag.value;
         if (
@@ -233,7 +232,6 @@ export default {
     },
     _appendTag(
       value,
-      _localValue = "",
       disabled = false,
       index = -1,
       type = "text"
@@ -249,8 +247,6 @@ export default {
         type,
       };
       this._setTag(tag);
-      // value           = common.setLayers(value, 0, '(', ')')
-      // value           = common.setLayers(value, 0, '[', ']')
       if (this._isTagBlacklist(tag)) return -1;
       if (index >= 0) {
         // 插入到指定位置
@@ -566,7 +562,7 @@ export default {
         let temp = keyword.toLowerCase();
         let find = this.tags.find((tag) => tag.value.toLowerCase() === temp);
         if (!find) {
-          let index = this._appendTag(keyword, "", false, -1, "text");
+          let index = this._appendTag(keyword, false, -1, "text");
           if (index !== -1) indexes.push(index);
         }
       }
@@ -936,7 +932,7 @@ export default {
       let tag = this.tags.find((tag) => tag.id === id);
       if (!tag) return;
       let index = this.tags.indexOf(tag);
-      let wrapIndex = this._appendTag("\n", "\n", false, -1, "wrap");
+      let wrapIndex = this._appendTag("\n", false, -1, "wrap");
       let wrapTag = this.tags[wrapIndex];
       // 移动到当前标签的下面
       this.tags.splice(wrapIndex, 1);

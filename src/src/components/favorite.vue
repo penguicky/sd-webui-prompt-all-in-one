@@ -279,7 +279,6 @@ export default {
             let favorite = group.list[index]
             if (index === 0) return
             this.gradioAPI.moveDownFavorite(this.favoriteKey, favorite.id).then(res => {
-            // this.gradioAPI.moveUpFavorite(this.favoriteKey, favorite.id).then(res => {
                 if (res) {
                     group.list.splice(index, 1)
                     group.list.splice(index - 1, 0, favorite)
@@ -293,7 +292,6 @@ export default {
             let favorite = group.list[index]
             if (index === group.list.length - 1) return
             this.gradioAPI.moveUpFavorite(this.favoriteKey, favorite.id).then(res => {
-            // this.gradioAPI.moveDownFavorite(this.favoriteKey, favorite.id).then(res => {
                 if (res) {
                     group.list.splice(index, 1)
                     group.list.splice(index + 1, 0, favorite)

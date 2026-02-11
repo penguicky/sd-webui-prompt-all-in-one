@@ -65,13 +65,7 @@ export default {
     computed: {},
     watch: {
         packagesState: {
-            handler() {
-                // if (!this.isAllInstalled()) {
-                //     this.open()
-                // } else {
-                //     // this.close()
-                // }
-            },
+            handler() {},
             deep: true,
         },
     },
@@ -130,7 +124,6 @@ export default {
                         complete(false)
                     }
                 }).catch(err => {
-                    console.log(err)
                     this.result += `${item.name} install failed\n${err.message}\n`
                     complete(false)
                 })

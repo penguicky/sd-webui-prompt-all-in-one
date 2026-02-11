@@ -94,7 +94,6 @@ export default {
                     groups: [],
                 }
                 this.extraNetworks.forEach(extraNetwork => {
-                    // if (extraNetwork.name === 'checkpoints') return
                     let subGroup = {
                         color: '',
                         name: extraNetwork.title,
@@ -174,7 +173,6 @@ export default {
             this._setGroupTagItemWidth()
         },
         _setGroupTagItemWidth() {
-            // this.$refs.groupTagItem
             this.$nextTick(() => {
                 if (!this.$refs.groupTagItem) return
                 this.$refs.groupTagItem.forEach((item, index) => {
@@ -194,7 +192,7 @@ export default {
         onClickHideGroupTags() {
             this.$emit('update:hideGroupTags', !this.hideGroupTags)
         },
-        onClickGroupTag(local, en, group, subGroup) {
+        onClickGroupTag(_local, en, group, subGroup) {
             // 判断是否存在 tags 中
             let indexes = []
             this.tags.forEach((tag, index) => {
@@ -212,14 +210,14 @@ export default {
                     let favorite = subGroup.ori[en]
                     this.onClickGroupTagFavorite(favorite)
                 } else {
-                    this._appendTag(en, local, false, -1, 'text')
+                    this._appendTag(en, false, -1, 'text')
                     this.updateTags()
                 }
             }
         },
         onClickGroupTagFavorite(favorite) {
             favorite.tags.forEach((tag) => {
-                this._appendTag(tag.value, "", tag.disabled, -1, tag.type)
+                this._appendTag(tag.value, tag.disabled, -1, tag.type)
             })
             this.updateTags()
         },
@@ -231,7 +229,6 @@ export default {
                     if (num > 100) {
                         data.loading = false
                         setTimeout(this.onClickGroupExtraNetworkRefresh, 1000)
-                        // console.log('超时')
                         return
                     }
                     if (opts && opts.sd_model_checkpoint) {
@@ -254,7 +251,6 @@ export default {
                         if (isLoaded) {
                             data.loading = false
                             setTimeout(this.onClickGroupExtraNetworkRefresh, 1000)
-                            // console.log('已加载')
                             return
                         }
                     }
@@ -262,7 +258,6 @@ export default {
                     setTimeout(setLoading, 100, num + 1)
                 }
                 setLoading(0)
-                console.log(data)
                 if (data.onclick) {
                     let e = document.createElement('div')
                     e.innerHTML = data.onclick
@@ -271,7 +266,6 @@ export default {
                     onclick = onclick.replace(/^"/, '').replace(/"$/, '').trim()
                     // 去除 return
                     onclick = onclick.replace(/^return /, '').trim()
-                    console.log(onclick)
                     new Function(onclick)()
                 } else {
                     selectCheckpoint(data.basename)
@@ -281,12 +275,11 @@ export default {
             let indexes = this._groupTagsExtraNetworkTagsIndexes(data)
             if (indexes.length) {
                 indexes.reverse().forEach((index) => {
-                    console.log(index)
                     this.tags.splice(index, 1)
                 })
                 this.updateTags()
             } else {
-                this._appendTag(JSON.parse(data.prompt), '', false, -1, 'text')
+                this._appendTag(JSON.parse(data.prompt), false, -1, 'text')
                 this.updateTags()
             }
         },
@@ -419,10 +412,6 @@ export default {
         },
         onClickGroupExtraNetworkRefresh() {
             this.$emit('refreshExtraNetworks')
-            // this.extraNetworksRefreshing = true
-            // this._loadExtraNetworks().finally(() => {
-            //     this.extraNetworksRefreshing = false
-            // })
         },
     }
 }

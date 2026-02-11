@@ -391,7 +391,6 @@ export default {
     autoRemoveSpace: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoRemoveSpaceChange", val);
         this.gradioAPI
           .setData("autoRemoveSpace", val)
           .then((data) => {
@@ -406,7 +405,6 @@ export default {
     autoRemoveLastComma: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoRemoveLastCommaChange", val);
         this.gradioAPI
           .setData("autoRemoveLastComma", val)
           .then((data) => {
@@ -421,7 +419,6 @@ export default {
     autoKeepWeightZero: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoKeepWeightZeroChange", val);
         this.gradioAPI
           .setData("autoKeepWeightZero", val)
           .then((data) => {})
@@ -432,7 +429,6 @@ export default {
     autoKeepWeightOne: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoKeepWeightOneChange", val);
         this.gradioAPI
           .setData("autoKeepWeightOne", val)
           .then((data) => {})
@@ -443,7 +439,6 @@ export default {
     autoBreakBeforeWrap: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoBreakBeforeWrap", val);
         this.gradioAPI
           .setData("autoBreakBeforeWrap", val)
           .then((data) => {
@@ -458,7 +453,6 @@ export default {
     autoBreakAfterWrap: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoBreakAfterWrap", val);
         this.gradioAPI
           .setData("autoBreakAfterWrap", val)
           .then((data) => {
@@ -473,7 +467,6 @@ export default {
     autoRemoveLoraBeforeComma: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoRemoveLoraBeforeCommaChange", val);
         this.gradioAPI
           .setData("autoRemoveLoraBeforeComma", val)
           .then((data) => {})
@@ -484,7 +477,6 @@ export default {
     autoRemoveLoraAfterComma: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoRemoveLoraAfterCommaChange", val);
         this.gradioAPI
           .setData("autoRemoveLoraAfterComma", val)
           .then((data) => {})
@@ -495,7 +487,6 @@ export default {
     useNovelAiWeightSymbol: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onUseNovelAiWeightSymbolChange", val);
         this.gradioAPI
           .setData("useNovelAiWeightSymbol", val)
           .then((data) => {})
@@ -506,7 +497,6 @@ export default {
     autoRemoveBeforeLineComma: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoRemoveBeforeLineCommaChange", val);
         this.gradioAPI
           .setData("autoRemoveBeforeLineComma", val)
           .then((data) => {})
@@ -517,7 +507,6 @@ export default {
     autoFormatCategorySpacing: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoFormatCategorySpacingChange", val);
         this.gradioAPI
           .setData("autoFormatCategorySpacing", val)
           .then((data) => {
@@ -532,7 +521,6 @@ export default {
     autoRemoveCategoryTrailingComma: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onAutoRemoveCategoryTrailingCommaChange", val);
         this.gradioAPI
           .setData("autoRemoveCategoryTrailingComma", val)
           .then((data) => {
@@ -547,7 +535,6 @@ export default {
     /*hideDefaultInput: {
             handler: function (val, oldVal) {
                 if (!this.startWatchSave) return
-                console.log('onHideDefaultInputChange', val)
                 this.prompts.forEach(item => {
                     item.$prompt.parentElement.parentElement.style.display = val ? 'none' : 'flex'
                 })
@@ -576,7 +563,6 @@ export default {
     groupTagsColor: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onGroupTagsColorChange", val, oldVal);
         this.gradioAPI
           .setData("groupTagsColor", val)
           .then((data) => {})
@@ -590,7 +576,6 @@ export default {
       if (this.extraNetworksWidthTimer)
         clearTimeout(this.extraNetworksWidthTimer);
       this.extraNetworksWidthTimer = setTimeout(() => {
-        console.log("onExtraNetworksWidthChange", this.extraNetworksWidth);
         this.gradioAPI
           .setData("extraNetworksWidth", this.extraNetworksWidth)
           .then((data) => {})
@@ -602,7 +587,6 @@ export default {
       if (this.extraNetworksHeightTimer)
         clearTimeout(this.extraNetworksHeightTimer);
       this.extraNetworksHeightTimer = setTimeout(() => {
-        console.log("onExtraNetworksHeightChange", this.extraNetworksHeight);
         this.gradioAPI
           .setData("extraNetworksHeight", this.extraNetworksHeight)
           .then((data) => {})
@@ -612,7 +596,6 @@ export default {
     enableNativeHighlighting: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        console.log("onEnableNativeHighlightingChange", val);
         this.gradioAPI
           .setData("enableNativeHighlighting", val)
           .then((data) => {})
@@ -623,10 +606,6 @@ export default {
     syntaxHighlightingColors: {
       handler: function (val, oldVal) {
         if (!this.startWatchSave) return;
-        // Debug logging (can be removed in production)
-        if (process.env.NODE_ENV === "development") {
-          console.log("onSyntaxHighlightingColorsChange", val);
-        }
         // Only save to storage, don't apply colors here (to avoid conflicts)
         this.gradioAPI
           .setData("syntaxHighlightingColors", val)
@@ -703,7 +682,6 @@ export default {
     this.gradioAPI
       .getConfig()
       .then((res) => {
-        console.log("config:", res);
         this.python = res.python;
         this.packagesState = res.packages_state;
         this.init();
@@ -715,7 +693,6 @@ export default {
           globals.shortName,
           { timeOut: 20000 }
         );
-        console.log(err);
       });
   },
   beforeUnmount() {
@@ -857,12 +834,6 @@ export default {
         // Load syntax highlighting colors from storage
         if (data.syntaxHighlightingColors !== null) {
           this.syntaxHighlightingColors = { ...data.syntaxHighlightingColors };
-          if (process.env.NODE_ENV === "development") {
-            console.log(
-              "Loaded syntax highlighting colors from storage:",
-              this.syntaxHighlightingColors
-            );
-          }
         }
 
         // Translation functionality removed
@@ -896,7 +867,6 @@ export default {
         this.$nextTick(() => {
           this.prompts.forEach((item) => {
             const $prompt = common.gradioApp().querySelector("#" + item.id);
-            console.log($prompt);
             item.$prompt.parentElement.parentElement.after($prompt);
             item.$prompt.parentElement.parentElement.style.display =
               item.hideDefaultInput ? "none" : "flex";
@@ -910,36 +880,7 @@ export default {
 
         waitTick.addWaitTick(() => this.loadGroupTags());
 
-        /*this.gradioAPI.getVersion().then(res => {
-                    this.version = res.version
-                    this.latestVersion = res.latest_version
-                    this.isLatestVersion = res.version === res.latest_version
-                })*/
 
-        // todo: test
-        // this.$refs.about.open()
-
-        // this.$refs.promptFormat.open()
-        // this.$refs.blacklist.open()
-        // this.$refs.hotkey.open()
-
-        /*this.$refs.extraNetworksPopup.show({
-                    getBoundingClientRect: () => {
-                        return {
-                            top: 0,
-                            left: 0,
-                            width: 0,
-                            height: 0,
-                            bottom: 0,
-                            right: 0,
-                        }
-                    },
-                    offsetHeight: 26,
-                }, 'FGOTiamatv2')*/
-        /*this.onShowFavorite('phystonPrompt_txt2img_prompt', {
-                    clientY: 150,
-                    clientX: 283,
-                })*/
       });
     },
     loadGroupTags() {
@@ -953,7 +894,6 @@ export default {
               this.groupTags = [];
             }
           } catch (e) {
-            console.log(e);
             this.groupTags = [];
           }
         }
@@ -1045,7 +985,6 @@ export default {
       let ids = [];
       for (const item of this.prompts) {
         if (item.tab == ele.id) {
-          console.log(item);
           ids.push(item.id);
           if (item.neg) {
             $textareaNeg = item.$textarea;

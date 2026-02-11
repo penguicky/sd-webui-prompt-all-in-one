@@ -1282,20 +1282,13 @@ export default {
       times.forEach((time) => {
         if (isBind) return;
         setTimeout(() => {
-          // console.log(this.name, '1111111111111111111111')
           if (isBind) return;
-          // console.log(this.name, '3333333333333333333333')
           if (typeof addAutocompleteToArea !== "function") return;
-          // console.log(this.name, '4444444444444444444444')
           if (typeof TAC_CFG !== "object") return;
-          // console.log(this.name, '5555555555555555555555')
           if (!TAC_CFG) return;
-          // console.log(this.name, '6666666666666666666666')
           if (!TAC_CFG["activeIn"]) return;
-          // console.log(this.name, '7777777777777777777777')
           isBind = true;
           addAutocompleteToArea(this.$refs.promptTagAppend);
-          // console.log(this.name, '2222222222222222222222')
         }, time);
       });
       this.init();
@@ -1337,10 +1330,6 @@ export default {
           }, 300, this);
         }
       }, 1000); // Reduced frequency from 500ms to 1000ms
-      // this.textarea.removeEventListener('change', this.onTextareaChange)
-      // this.textarea.addEventListener('change', this.onTextareaChange)
-      // this.textarea.removeEventListener('blur', this.onTextareaChange)
-      // this.textarea.addEventListener('blur', this.onTextareaChange)
     },
     onTextareaChange(event) {
       if (this.onTextareaChangeTimeId)
@@ -1350,7 +1339,6 @@ export default {
       }, 100);
     },
     _onTextareaChange(event) {
-      console.log("onTextareaChange", event);
 
       // Check if autocomplete is active - if so, don't process
       const autocompleteParent =
@@ -1618,7 +1606,6 @@ export default {
         if (prompt) prompts.push(prompt);
       });
       if (prompts.length <= 0) return "";
-      // console.log('update tags', prompts)
       return prompts.join("");
     },
     updatePrompt() {
@@ -1661,7 +1648,7 @@ export default {
       }
       for (let i = 0; i < insertWrapIndexes.length; i++) {
         let index = insertWrapIndexes[i] + i;
-        this._appendTag("\n", "\n", false, index, "wrap");
+        this._appendTag("\n", false, index, "wrap");
       }
       if (insertWrapIndexes.length) {
         // Use debounced update to prevent immediate recursion
@@ -1693,7 +1680,6 @@ export default {
     updateTags() {
       // Invalidate network tag index for O(1) lookups
       this._invalidateNetworkTagIndex();
-      console.log("tags change", this.tags);
       this.updatePrompt();
 
       // Debounce expensive operations
@@ -1783,7 +1769,6 @@ export default {
 
       if (shouldEnablePerformanceMode !== this._performanceMode) {
         this._performanceMode = shouldEnablePerformanceMode;
-        console.log(`[PromptAllInOne] Performance mode ${shouldEnablePerformanceMode ? 'enabled' : 'disabled'} (${currentLength} tags)`);
       }
 
       this._lastPromptLength = currentLength;
@@ -1857,28 +1842,8 @@ export default {
           });
           this.$forceUpdate();
           this.updateTags();
-
-          /*let oldIndex = env.oldDraggableIndex
-                    let newIndex = env.newDraggableIndex
-                    if (oldIndex === newIndex) {
-                        if (env.oldIndex !== env.newIndex) {
-                            // 强制换回去
-                            let oldElement = this.$refs.promptTagsList.children[env.oldIndex]
-                            let newElement = this.$refs.promptTagsList.children[env.newIndex]
-                            common.swapElement(oldElement, newElement)
-                            return
-                        }
-                    }
-
-                    const tags = [...this.tags]
-                    tags.splice(newIndex, 0, tags.splice(oldIndex, 1)[0])
-
-                    this.tags = tags
-                    this.$forceUpdate()
-                    this.updateTags()*/
         },
         onChoose: (env) => {
-          console.log(env);
           if (this.dropTags.length) {
             let current = env.item;
             let currentId = current.getAttribute("data-id");
@@ -1925,7 +1890,6 @@ export default {
       history.tags.forEach((item) => {
         this._appendTag(
           item.value,
-          "",
           item.disabled,
           -1,
           item.type || "text"
@@ -1953,10 +1917,6 @@ export default {
       // Force re-render of all tags to apply new colors
 
       // ENHANCED APPROACH: Force comprehensive tag style updates
-      if (process.env.NODE_ENV === "development") {
-        console.log("Processing", this.tags.length, "tags for color refresh");
-      }
-
       this.tags.forEach((tag, index) => {
         // Re-apply tag classes with new colors
         this._setTagClass(tag);
@@ -1973,10 +1933,6 @@ export default {
         // Force Vue reactivity by updating tag properties
         tag.colorUpdateKey = Date.now();
 
-        // Debug: Log tag class updates
-        if (process.env.NODE_ENV === "development" && index < 3) {
-          console.log(`Tag ${index}:`, tag.classes, tag.value);
-        }
       });
 
       // Force Vue to re-render the component

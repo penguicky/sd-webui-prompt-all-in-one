@@ -168,7 +168,6 @@ function _splitTagsImpl(tags, autoBreakBeforeWrap, autoBreakAfterWrap) {
             emojis.forEach((emoji, index) => {
                 value2 = value2.replace("|||EXPRESSION" + index + "|||", emoji.emoji)
             })
-            // value2 = value2.replace(/\|\|\|EXPRESSION1\|\|\|/g, '>_<')
             result2.push(value2)
         }
     }
@@ -263,12 +262,10 @@ export default {
     splitTags(tags) {
         tags = tags.trim()
         tags = tags.replace(/\t/g, '\n') // 制表符
-        // tags = tags.replace(/\n/g, '\n') // 换行符
         tags = tags.replace(/\r/g, '\n') // 回车符
         tags = tags.replace(/\n+/g, '\n') // 连续换行符
 
         tags = tags.replace(/\n+/g, ',')
-        console.log(tags)
 
         let list = []
         const lines = tags.split("\n")

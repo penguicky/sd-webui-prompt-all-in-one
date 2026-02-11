@@ -268,7 +268,7 @@ export default {
                     tags.forEach(tag => {
                         let index = -1
                         if (tag === "\n") {
-                            index = this._appendTag("\n", "\n", false, -1, 'wrap')
+                            index = this._appendTag("\n", false, -1, 'wrap')
                         } else {
                             index = this._appendTag(tag)
                         }
@@ -376,7 +376,7 @@ export default {
             }
             if (appendTags.length <= 0) return
             appendTags.forEach(tag => {
-                this._appendTag(tag.value, "", tag.disabled, -1, tag.type)
+                this._appendTag(tag.value, tag.disabled, -1, tag.type)
             })
             this.updateTags()
         },
@@ -451,7 +451,7 @@ export default {
                 if (common.hasBrackets(tags)) {
                     tags = common.replaceBrackets(tags)
                 }
-                this._appendTag(tags, text)
+                this._appendTag(tags)
                 this.updateTags()
             }, 300)
         },

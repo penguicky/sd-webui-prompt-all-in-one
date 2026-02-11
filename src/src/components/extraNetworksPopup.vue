@@ -227,9 +227,7 @@ export default {
             if (!value) return
             if (typeof this.useCallback !== 'function') return
             let tags = common.splitTags(value)
-            console.log(tags)
             this.useCallback(tags)
-            // this.$toastr.success(this.getLang('success'))
         },
     },
 }

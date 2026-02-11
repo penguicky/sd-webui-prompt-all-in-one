@@ -170,11 +170,6 @@ export default {
 
     refreshHighlighting() {
       // SAFE refresh of all highlighters for color changes
-      // Debug logging (can be removed in production)
-      if (process.env.NODE_ENV === "development") {
-        console.log("Refreshing native highlighting for color changes...");
-      }
-
       // Single immediate refresh
       this.forceRefreshAllHighlighters();
 

@@ -61,10 +61,6 @@ export default {
             for (const prop of style) {
                 this.$refs.highlightPrompt.style[prop] = style[prop]
             }
-            // this.$refs.highlightPrompt.style.position = 'absolute'
-            // this.$refs.highlightPrompt.style.zIndex = '1'
-            // this.$refs.highlightPrompt.style.top = '0px'
-            // this.$refs.highlightPrompt.style.left = '0px'
             this.$refs.highlightPrompt.style.display = 'block'
             this.textarea.style.display = 'none'
 

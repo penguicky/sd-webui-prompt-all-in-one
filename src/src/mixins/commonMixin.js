@@ -16,11 +16,9 @@ export default {
     methods: {
         loadExtraNetworks(loadI = 0) {
             if (common.gradioApp().querySelectorAll("#txt2img_checkpoints_cards .card").length) {
-                // console.log('系统ExtraNetworks已加载，开始加载ExtraNetworks')
                 return this._loadExtraNetworks()
             }
             if (loadI > 10) {
-                // console.log('超时10秒，开始加载ExtraNetworks')
                 return this._loadExtraNetworks()
             }
             setTimeout(this.loadExtraNetworks, 1000, loadI + 1)

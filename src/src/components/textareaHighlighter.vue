@@ -366,10 +366,6 @@ export default {
       // Force a SAFE refresh for color updates (preserve content)
       if (!this.targetTextarea || !this.isActive) return;
 
-      // Debug logging (can be removed in production)
-      if (process.env.NODE_ENV === "development") {
-        console.log("Force refreshing textarea highlighting...");
-      }
 
       const text = this.targetTextarea.value;
 

@@ -386,10 +386,6 @@ export default {
         "important"
       );
 
-      // Debug logging (can be removed in production)
-      if (process.env.NODE_ENV === "development") {
-        console.log("Settings panel applied colors to CSS:", this.localColors);
-      }
 
       // Force a style recalculation to ensure immediate visual updates
       this.$nextTick(() => {
