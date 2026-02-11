@@ -101,22 +101,15 @@ export default {
                 lycoris: '',
                 embedding: '',
             }
+            const keys = ['prompt', 'negative_prompt', 'lora', 'lycoris', 'embedding']
             this.gradioAPI.getDatas(['blacklist', 'cancelBlacklistConfirm']).then(res => {
                 if (res.blacklist) {
-                    this.data.prompt = res.blacklist.prompt || []
-                    this.data.negative_prompt = res.blacklist.negative_prompt || []
-                    this.data.lora = res.blacklist.lora || []
-                    this.data.lycoris = res.blacklist.lycoris || []
-                    this.data.embedding = res.blacklist.embedding || []
+                    keys.forEach(k => { this.data[k] = res.blacklist[k] || [] })
                 }
                 if (res.cancelBlacklistConfirm) {
                     this.cancelBlacklistConfirm = res.cancelBlacklistConfirm
                 }
-                this.textarea.prompt = this.data.prompt.join('\n')
-                this.textarea.negative_prompt = this.data.negative_prompt.join('\n')
-                this.textarea.lora = this.data.lora.join('\n')
-                this.textarea.lycoris = this.data.lycoris.join('\n')
-                this.textarea.embedding = this.data.embedding.join('\n')
+                keys.forEach(k => { this.textarea[k] = this.data[k].join('\n') })
             })
         },
         close() {
@@ -126,11 +119,10 @@ export default {
             this.close()
         },
         onSaveClick() {
-            this.data.prompt = this.textarea.prompt.split(/\s*\n\s*/).filter(item => item?.trim().length)
-            this.data.negative_prompt = this.textarea.negative_prompt.split(/\s*\n\s*/).filter(item => item?.trim().length)
-            this.data.lora = this.textarea.lora.split(/\s*\n\s*/).filter(item => item?.trim().length)
-            this.data.lycoris = this.textarea.lycoris.split(/\s*\n\s*/).filter(item => item?.trim().length)
-            this.data.embedding = this.textarea.embedding.split(/\s*\n\s*/).filter(item => item?.trim().length)
+            const keys = ['prompt', 'negative_prompt', 'lora', 'lycoris', 'embedding']
+            keys.forEach(k => {
+                this.data[k] = this.textarea[k].split(/\s*\n\s*/).filter(item => item?.trim().length)
+            })
             this.gradioAPI.setData('blacklist', this.data)
             this.gradioAPI.setData('cancelBlacklistConfirm', this.cancelBlacklistConfirm)
             this.close()

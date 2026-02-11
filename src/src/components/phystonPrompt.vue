@@ -1678,8 +1678,9 @@ export default {
       }
     },
     updateTags() {
-      // Invalidate network tag index for O(1) lookups
+      // Invalidate indexes for O(1) lookups
       this._invalidateNetworkTagIndex();
+      this._invalidateTagById();
       this.updatePrompt();
 
       // Debounce expensive operations

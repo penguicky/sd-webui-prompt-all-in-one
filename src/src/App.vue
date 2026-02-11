@@ -388,177 +388,7 @@ export default {
     };
   },
   watch: {
-    autoRemoveSpace: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoRemoveSpace", val)
-          .then((data) => {
-            this.prompts.forEach((item) => {
-              this.$refs[item.id][0].updatePrompt();
-            });
-          })
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoRemoveLastComma: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoRemoveLastComma", val)
-          .then((data) => {
-            this.prompts.forEach((item) => {
-              this.$refs[item.id][0].updatePrompt();
-            });
-          })
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoKeepWeightZero: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoKeepWeightZero", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoKeepWeightOne: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoKeepWeightOne", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoBreakBeforeWrap: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoBreakBeforeWrap", val)
-          .then((data) => {
-            this.prompts.forEach((item) => {
-              this.$refs[item.id][0].updatePrompt();
-            });
-          })
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoBreakAfterWrap: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoBreakAfterWrap", val)
-          .then((data) => {
-            this.prompts.forEach((item) => {
-              this.$refs[item.id][0].updatePrompt();
-            });
-          })
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoRemoveLoraBeforeComma: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoRemoveLoraBeforeComma", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoRemoveLoraAfterComma: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoRemoveLoraAfterComma", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    useNovelAiWeightSymbol: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("useNovelAiWeightSymbol", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoRemoveBeforeLineComma: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoRemoveBeforeLineComma", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoFormatCategorySpacing: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoFormatCategorySpacing", val)
-          .then((data) => {
-            this.prompts.forEach((item) => {
-              this.$refs[item.id][0].updatePrompt();
-            });
-          })
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    autoRemoveCategoryTrailingComma: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("autoRemoveCategoryTrailingComma", val)
-          .then((data) => {
-            this.prompts.forEach((item) => {
-              this.$refs[item.id][0].updatePrompt();
-            });
-          })
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    enableTooltip: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        localStorage.setItem(
-          "phystonPromptEnableTooltip",
-          val ? "true" : "false"
-        );
-        this.updateTippyState();
-        this.gradioAPI
-          .setData("enableTooltip", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-
-    groupTagsColor: {
-      handler: function (val, oldVal) {
-        if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("groupTagsColor", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      deep: true,
-      immediate: false,
-    },
+    // Debounced watchers for extraNetworks dimensions (need timer references)
     extraNetworksWidth() {
       if (!this.startWatchSave) return;
       if (this.extraNetworksWidthTimer)
@@ -581,28 +411,55 @@ export default {
           .catch((err) => {});
       }, 500);
     },
-    enableNativeHighlighting: {
-      handler: function (val, oldVal) {
+  },
+  created() {
+    // Data-driven setting watchers — replaces 17 near-identical watcher blocks
+    const saveAndUpdatePrompt = [
+      'autoRemoveSpace', 'autoRemoveLastComma', 'autoBreakBeforeWrap',
+      'autoBreakAfterWrap', 'autoFormatCategorySpacing', 'autoRemoveCategoryTrailingComma',
+    ];
+    const saveOnly = [
+      'autoKeepWeightZero', 'autoKeepWeightOne', 'autoRemoveLoraBeforeComma',
+      'autoRemoveLoraAfterComma', 'useNovelAiWeightSymbol', 'autoRemoveBeforeLineComma',
+      'enableNativeHighlighting',
+    ];
+    const deepSaveOnly = ['groupTagsColor', 'syntaxHighlightingColors'];
+
+    // Settings that save + trigger updatePrompt on all prompts
+    saveAndUpdatePrompt.forEach((prop) => {
+      this.$watch(prop, (val) => {
         if (!this.startWatchSave) return;
-        this.gradioAPI
-          .setData("enableNativeHighlighting", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      immediate: false,
-    },
-    syntaxHighlightingColors: {
-      handler: function (val, oldVal) {
+        this.gradioAPI.setData(prop, val).then(() => {
+          this.prompts.forEach((item) => {
+            this.$refs[item.id][0].updatePrompt();
+          });
+        }).catch(() => {});
+      });
+    });
+
+    // Settings that only save (no side effects)
+    saveOnly.forEach((prop) => {
+      this.$watch(prop, (val) => {
         if (!this.startWatchSave) return;
-        // Only save to storage, don't apply colors here (to avoid conflicts)
-        this.gradioAPI
-          .setData("syntaxHighlightingColors", val)
-          .then((data) => {})
-          .catch((err) => {});
-      },
-      deep: true,
-      immediate: false,
-    },
+        this.gradioAPI.setData(prop, val).catch(() => {});
+      });
+    });
+
+    // Deep watchers that only save
+    deepSaveOnly.forEach((prop) => {
+      this.$watch(prop, (val) => {
+        if (!this.startWatchSave) return;
+        this.gradioAPI.setData(prop, val).catch(() => {});
+      }, { deep: true });
+    });
+
+    // Special: enableTooltip — save + localStorage + updateTippyState
+    this.$watch('enableTooltip', (val) => {
+      if (!this.startWatchSave) return;
+      localStorage.setItem('phystonPromptEnableTooltip', val ? 'true' : 'false');
+      this.updateTippyState();
+      this.gradioAPI.setData('enableTooltip', val).catch(() => {});
+    });
   },
   mounted() {
     common.loadCSS(
@@ -692,6 +549,15 @@ export default {
     if (this._pastePollingInterval) {
       clearInterval(this._pastePollingInterval);
       this._pastePollingInterval = null;
+    }
+    // Clean up debounced extraNetworks timers
+    if (this.extraNetworksWidthTimer) {
+      clearTimeout(this.extraNetworksWidthTimer);
+      this.extraNetworksWidthTimer = null;
+    }
+    if (this.extraNetworksHeightTimer) {
+      clearTimeout(this.extraNetworksHeightTimer);
+      this.extraNetworksHeightTimer = null;
     }
   },
   methods: {

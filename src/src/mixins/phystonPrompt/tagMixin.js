@@ -19,6 +19,9 @@ export default {
     // Non-reactive state for batched _setTagHeight calls
     this._pendingHeightTagIds = new Set();
     this._heightRafId = null;
+    // Non-reactive index for O(1) tag-by-id lookups
+    this._tagById = new Map();
+    this._tagByIdDirty = true;
   },
   mounted() {
     // Set up event listeners for category term hover detection
@@ -194,8 +197,24 @@ export default {
       tag.classes = classes;
       return classes;
     },
+    _invalidateTagById() {
+      this._tagByIdDirty = true;
+    },
+    _rebuildTagById() {
+      this._tagById.clear();
+      for (const tag of this.tags) {
+        this._tagById.set(tag.id, tag);
+      }
+      this._tagByIdDirty = false;
+    },
+    _getTagById(id) {
+      if (this._tagByIdDirty) {
+        this._rebuildTagById();
+      }
+      return this._tagById.get(id) || null;
+    },
     _setTagById(id, value = null) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       if (value !== null) tag.value = value;
       return tag;
@@ -455,7 +474,7 @@ export default {
     },
 
     renderTag(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return "";
       let value = tag.value;
       if (
@@ -539,7 +558,7 @@ export default {
       return value;
     },
     isFavorite(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       if (typeof window.phystonPromptfavorites === "object") {
         for (const group of window.phystonPromptfavorites) {
@@ -569,7 +588,7 @@ export default {
     },
     onTagMouseEnter(id) {
       if (this.isEditing) return false;
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       tag.isFavorite = this.isFavorite(tag.id);
       if (this.hotkey.hover === "extend") this.showExtendId = id;
@@ -590,7 +609,7 @@ export default {
     },
     onTagMouseMove(id) {},
     onTagMouseLeave(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       if (this.hotkey.hover === "extend") {
         // If we're showing extend menu for a category term, use delayed hiding
@@ -651,7 +670,7 @@ export default {
       }
     },
     _handleEditTag(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       this.editing = {};
       this.editing[tag.id] = true;
@@ -665,24 +684,24 @@ export default {
       });
     },
     _handleDisableTag(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       this.onDisabledTagClick(tag.id);
     },
     _handleHoverTag(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       this.showExtendId = id;
     },
     onTagInputBlur(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       this.editing[tag.id] = false;
       this.isEditing = false;
     },
     onTagInputKeyDown(id, e) {
       if (e.keyCode === 13) {
-        let tag = this.tags.find((tag) => tag.id === id);
+        let tag = this._getTagById(id);
         if (!tag) return false;
         this.editing[tag.id] = false;
         this.isEditing = false;
@@ -690,7 +709,7 @@ export default {
       }
     },
     onTagInputChange(id, e) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       this._changeTagValue(tag, e.target.value);
     },
@@ -720,7 +739,7 @@ export default {
         return;
       }
 
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       e = typeof e === "number" || typeof e === "string" ? e : e.target.value;
       if (tag.weightNum == e) return;
@@ -790,7 +809,7 @@ export default {
       this.updateTagsDebounced(100);
     },
     onDeleteTagClick(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
 
       // Clear any stored modified term values for this tag
@@ -818,7 +837,7 @@ export default {
       this.onDeleteTagClick(id);
     },
     onFavoriteTagClick(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return false;
       let favoriteId = this.isFavorite(tag.id);
       if (!favoriteId) {
@@ -857,71 +876,65 @@ export default {
         return;
       }
 
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return;
       tag.disabled = !tag.disabled;
       this.updateTagsDebounced(100);
     },
     onIncWeightClick(id, num) {
-      // Check if we're working with a category term
-      if (
-        this.categoryTermHoverData &&
-        this.categoryTermHoverData.tag.id === id
-      ) {
-        const { tag, termValue, termIndex } = this.categoryTermHoverData;
-        this._modifyCategoryTerm(tag, termIndex, termValue, "inc", num);
-        return;
-      }
-
-      let tag = this.tags.find((tag) => tag.id === id);
-      if (!tag) return;
-      let value = tag.value;
-      value = common.setLayers(value, 0, "[", "]");
-      if (this.useNovelAiWeightSymbol) {
-        value = common.setLayers(value, 0, "(", ")");
-      }
-      let incWeight = tag.incWeight;
-      incWeight += num;
-      if (incWeight < 0) incWeight = 0;
-      tag.incWeight = incWeight;
-      tag.decWeight = 0;
-      if (this.useNovelAiWeightSymbol) {
-        value = common.setLayers(value, incWeight, "{", "}");
-      } else {
-        value = common.setLayers(value, incWeight, "(", ")");
-      }
-      tag.value = value;
-      this.updateTagsDebounced(100);
+      this._adjustWeight(id, "inc", num);
     },
     onDecWeightClick(id, num) {
+      this._adjustWeight(id, "dec", num);
+    },
+    _adjustWeight(id, direction, num) {
       // Check if we're working with a category term
       if (
         this.categoryTermHoverData &&
         this.categoryTermHoverData.tag.id === id
       ) {
         const { tag, termValue, termIndex } = this.categoryTermHoverData;
-        this._modifyCategoryTerm(tag, termIndex, termValue, "dec", num);
+        this._modifyCategoryTerm(tag, termIndex, termValue, direction, num);
         return;
       }
 
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return;
       let value = tag.value;
-      value = common.setLayers(value, 0, "(", ")");
-      if (this.useNovelAiWeightSymbol) {
-        value = common.setLayers(value, 0, "{", "}");
+
+      if (direction === "inc") {
+        // Strip opposite bracket type first
+        value = common.setLayers(value, 0, "[", "]");
+        if (this.useNovelAiWeightSymbol) {
+          value = common.setLayers(value, 0, "(", ")");
+        }
+        let weight = tag.incWeight + num;
+        if (weight < 0) weight = 0;
+        tag.incWeight = weight;
+        tag.decWeight = 0;
+        if (this.useNovelAiWeightSymbol) {
+          value = common.setLayers(value, weight, "{", "}");
+        } else {
+          value = common.setLayers(value, weight, "(", ")");
+        }
+      } else {
+        // Strip opposite bracket type first
+        value = common.setLayers(value, 0, "(", ")");
+        if (this.useNovelAiWeightSymbol) {
+          value = common.setLayers(value, 0, "{", "}");
+        }
+        let weight = tag.decWeight + num;
+        if (weight < 0) weight = 0;
+        tag.incWeight = 0;
+        tag.decWeight = weight;
+        value = common.setLayers(value, weight, "[", "]");
       }
-      let decWeight = tag.decWeight;
-      decWeight += num;
-      if (decWeight < 0) decWeight = 0;
-      tag.incWeight = 0;
-      tag.decWeight = decWeight;
-      value = common.setLayers(value, decWeight, "[", "]");
+
       tag.value = value;
       this.updateTagsDebounced(100);
     },
     onWrapTagClick(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return;
       let index = this.tags.indexOf(tag);
       let wrapIndex = this._appendTag("\n", false, -1, "wrap");
@@ -933,7 +946,7 @@ export default {
       this.updateTags();
     },
     onBlacklistClick(id) {
-      let tag = this.tags.find((tag) => tag.id === id);
+      let tag = this._getTagById(id);
       if (!tag) return;
 
       if (!this.cancelBlacklistConfirm) {
@@ -1014,7 +1027,7 @@ export default {
         if (!tagElement) return;
 
         const tagId = tagElement.getAttribute("data-id");
-        const tag = this.tags.find((t) => t.id === tagId);
+        const tag = this._getTagById(tagId);
         if (!tag) return;
 
         // Calculate position of the term wrapper for menu positioning
