@@ -170,7 +170,6 @@ import common from "@/utils/common";
 export default {
   name: "PromptFormat",
   components: { IconSvg },
-  mixins: [],
   props: {
     autoRemoveSpace: {
       type: Boolean,
@@ -240,8 +239,6 @@ export default {
     "update:autoFormatCategorySpacing",
     "update:autoRemoveCategoryTrailingComma",
   ],
-  computed: {},
-  mounted() {},
   methods: {
     getLang(key) {
       return common.getLang(key);

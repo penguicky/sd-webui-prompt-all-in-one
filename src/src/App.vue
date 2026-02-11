@@ -25,8 +25,6 @@
         v-model:auto-remove-lora-after-comma="autoRemoveLoraAfterComma"
         v-model:use-novel-ai-weight-symbol="useNovelAiWeightSymbol"
         v-model:auto-remove-before-line-comma="autoRemoveBeforeLineComma"
-        :auto-format-category-spacing="autoFormatCategorySpacing"
-        :auto-remove-category-trailing-comma="autoRemoveCategoryTrailingComma"
         v-model:auto-format-category-spacing="autoFormatCategorySpacing"
         v-model:auto-remove-category-trailing-comma="
           autoRemoveCategoryTrailingComma
@@ -172,7 +170,6 @@
       ref="syntaxHighlightingSettings"
       :colors="syntaxHighlightingColors"
       @update:colors="onUpdateSyntaxHighlightingColors"
-      @close="onSyntaxHighlightingSettingsClose"
     />
   </div>
 </template>
@@ -219,7 +216,6 @@ export default {
     NativeHighlightManager,
     SyntaxHighlightingSettings,
   },
-  mixins: [],
   data() {
     return {
       prompts: [
@@ -381,7 +377,6 @@ export default {
         regularTerms: "#00cc66",
         weightValueBoost: "#00cc66", // > 1.0
         weightValueReduce: "#cc0066", // < 1.0
-        weightValueNormal: "#00cc66", // = 1.0 (uses regular color)
         punctuation: "#9966cc", // For weights, LoRA syntax, and categories
         categoryNames: "#ff69b4",
       },
@@ -959,9 +954,6 @@ export default {
         this.syntaxHighlightingColors
       );
     },
-    onSyntaxHighlightingSettingsClose() {
-      // Handle settings panel close if needed
-    },
     applySyntaxHighlightingColors() {
       // Apply colors to CSS custom properties for real-time updates
       const root = document.documentElement;
@@ -1060,11 +1052,6 @@ export default {
         this.syntaxHighlightingColors.loraNames,
         "important"
       );
-
-      // Apply CSS custom properties
-      const rootElement = document.documentElement;
-
-      // Force immediate re-rendering
 
       // Single immediate update
       this.forceImmediateColorUpdates();

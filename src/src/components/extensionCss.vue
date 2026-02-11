@@ -39,16 +39,12 @@ import common from "@/utils/common";
 export default {
     name: 'ExtensionCss',
     components: {IconSvg},
-    mixins: [],
     props: {},
     data() {
         return {
             isOpen: false,
             list: [],
         }
-    },
-    computed: {},
-    mounted() {
     },
     methods: {
         getLang(key) {

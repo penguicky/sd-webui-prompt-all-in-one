@@ -139,25 +139,6 @@ export default {
     },
 
     /**
-     * 判断是否是英文
-     * @param text {string}
-     * @returns {boolean}
-     */
-    isEnglish(text) {
-        const length = text.length
-        if (text[0] === '<' && text[length - 1] === '>') {
-            return true
-        }
-        // 通过ascii码判断
-        for (let i = 0; i < length; i++) {
-            if (text.charCodeAt(i) > 127) {
-                return false
-            }
-        }
-        return true
-    },
-
-    /**
      * Get English language string by key
      * @param key {string}
      * @returns {string}

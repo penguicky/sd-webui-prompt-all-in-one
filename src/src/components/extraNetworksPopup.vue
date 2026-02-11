@@ -58,7 +58,6 @@ const TYPE_EMBEDDING = 'embedding'
 export default {
     name: 'ExtraNetworksPopup',
     components: {IconSvg},
-    mixins: [],
     props: {
         extraNetworks: {
             type: Array,
@@ -80,7 +79,6 @@ export default {
             eMouseIn: false,
         }
     },
-    computed: {},
     watch: {
         extraNetworks: {
             handler(networks) {

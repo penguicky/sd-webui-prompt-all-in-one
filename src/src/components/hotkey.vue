@@ -30,7 +30,6 @@ import common from "@/utils/common";
 export default {
     name: 'Hotkey',
     components: {IconSvg},
-    mixins: [],
     props: {
         defaultHotkey: {
             type: Object,
@@ -129,9 +128,6 @@ export default {
         }
     },
     emits: ['update:hotkey'],
-    computed: {},
-    mounted() {
-    },
     methods: {
         getLang(key) {
             return common.getLang(key);

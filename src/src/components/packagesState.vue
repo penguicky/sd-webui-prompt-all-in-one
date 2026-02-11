@@ -41,7 +41,6 @@ import common from "@/utils/common";
 export default {
     name: 'PackagesState',
     components: {IconSvg},
-    mixins: [],
     props: {
         python: {
             type: String,
@@ -62,7 +61,6 @@ export default {
         }
     },
     emits: [],
-    computed: {},
     watch: {
         packagesState: {
             handler() {},

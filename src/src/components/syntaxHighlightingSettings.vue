@@ -222,7 +222,6 @@ export default {
         regularTerms: "#00cc66",
         weightValueBoost: "#00cc66",
         weightValueReduce: "#cc0066",
-        weightValueNormal: "#00cc66",
         punctuation: "#9966cc",
         categoryNames: "#ff69b4",
       },

@@ -54,7 +54,6 @@ import common from "@/utils/common";
 export default {
     name: 'Blacklist',
     components: {IconSvg},
-    mixins: [],
     props: {
     },
     data() {
@@ -78,9 +77,6 @@ export default {
         }
     },
     emits: ['update:blacklist'],
-    computed: {},
-    mounted() {
-    },
     methods: {
         getLang(key) {
             return common.getLang(key);

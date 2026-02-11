@@ -47,8 +47,6 @@ export default {
         tag.decWeight = 0;
       } else {
         tag.weightNum = common.getTagWeightNum(tag.value);
-        // tag.weightNum = tag.weightNum <= 0 ? 1 : tag.weightNum
-        // tag.weightNum = tag.weightNum === 0 ? 1 : tag.weightNum
         tag.incWeight = common.getTagIncWeight(
           tag.value,
           this.useNovelAiWeightSymbol
@@ -60,7 +58,6 @@ export default {
           !tag.value.match(common.loraRegex) &&
           !tag.value.match(common.lycoRegex)
         ) {
-          // tag.weightNum = tag.weightNum <= 0 ? 1 : tag.weightNum
           let value = tag.value;
           const bracket = common.hasBrackets(value);
           if (
@@ -122,7 +119,6 @@ export default {
         });
       }
     },
-    _getTagType(tag) {},
     _setTagClass(tag) {
       tag.isLora = false;
       tag.loraExists = false;
@@ -387,7 +383,8 @@ export default {
 
           // CRITICAL FIX: Check if we have a stored modified value for this term
           // This prevents LoRA weight loss after DOM re-rendering
-          const tagId = this._getCurrentTagId(value);
+          const matchingTag = this.tags.find((t) => t.value === value);
+          const tagId = matchingTag ? matchingTag.id : null;
           if (tagId) {
             const storedValue = this._getStoredModifiedTermValue(tagId, i);
             if (storedValue) {
@@ -607,7 +604,6 @@ export default {
         );
       }
     },
-    onTagMouseMove(id) {},
     onTagMouseLeave(id) {
       let tag = this._getTagById(id);
       if (!tag) return false;
@@ -1143,33 +1139,6 @@ export default {
       this._hideExtendMenuDelayed();
     },
 
-    // Create a virtual tag object for category terms that can work with existing weight methods
-    _createVirtualCategoryTermTag() {
-      if (!this.categoryTermHoverData) return null;
-
-      const { tag, termValue, termIndex } = this.categoryTermHoverData;
-
-      // Create a virtual tag that represents the individual term
-      const virtualTag = {
-        id: `category-term-${tag.id}-${termIndex}`,
-        value: termValue,
-        weightNum: this._getCategoryTermWeight(termValue),
-        incWeight: 0,
-        decWeight: 0,
-        isLora: false,
-        isLyco: false,
-        isEmbedding: false,
-        isCategoryTerm: true,
-        parentTag: tag,
-        termIndex: termIndex,
-      };
-
-      // Set tag class properties for the virtual tag
-      this._setTagClass(virtualTag);
-
-      return virtualTag;
-    },
-
     // Get weight of a category term
     _getCategoryTermWeight(termValue) {
       // Extract weight from various weight syntaxes
@@ -1428,14 +1397,6 @@ export default {
 
       // Use the common utility method that doesn't create DOM elements
       return common.unescapeHtml(str);
-    },
-
-    // Helper function to get the current tag ID during rendering
-    // This is used to look up stored modified term values during DOM re-rendering
-    _getCurrentTagId(categoryValue) {
-      // Find the tag that matches this category value
-      const tag = this.tags.find((t) => t.value === categoryValue);
-      return tag ? tag.id : null;
     },
 
     // Critical fix: Store modified term values persistently

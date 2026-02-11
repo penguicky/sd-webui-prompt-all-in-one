@@ -39,7 +39,6 @@ import common from "@/utils/common";
 export default {
     name: 'About',
     components: {IconSvg},
-    mixins: [],
     data() {
         return {
             version: '',
@@ -53,7 +52,6 @@ export default {
         }
     },
     emits: ['use'],
-    computed: {},
     mounted() {
         this.icons = [
             {

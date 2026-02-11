@@ -100,14 +100,6 @@
                     <icon-svg class="hover-scale-120" name="about" />
                   </div>
 
-                  <!--<div class="gradio-checkbox hover-scale-120">
-                                        <label v-tooltip="getLang('is_remove_space')">
-                                            <input type="checkbox" name="auto_remove_space" value="1"
-                                                   :checked="autoRemoveSpace"
-                                                   @change="$emit('update:autoRemoveSpace', $event.target.checked)">
-                                            <icon-svg name="remove-space"/>
-                                        </label>
-                                    </div>-->
                   <div class="gradio-checkbox hover-scale-120">
                     <label v-tooltip="getLang('whether_to_enable_tooltip')">
                       <input
@@ -178,7 +170,6 @@
             </div>
           </div>
         </div>
-        <!--<div class="prompt-header-break"></div>-->
         <div class="prompt-header-extend">
           <div class="extend-content">
             <div class="extend-btn-group">
@@ -390,8 +381,7 @@
                         ></div>
                         <div v-else class="tags-item">
                           <div class="item-tag-value">{{ tag.value }}</div>
-                          <div class="item-tag-local-value">
-                          </div>
+
                         </div>
                       </template>
                     </div>
@@ -414,7 +404,6 @@
         @mouseup="onDropMouseUp"
       >
         <div class="prompt-tags-list" ref="promptTagsList">
-          <!--<TransitionGroup name="fadeLeft">-->
           <div
             v-for="(tag, index) in tags"
             :key="tag.id + '-' + colorRefreshKey"
@@ -429,7 +418,6 @@
             <div
               class="prompt-tag-main"
               @mouseenter="onTagMouseEnter(tag.id)"
-              @mousemove.stop="onTagMouseMove(tag.id)"
               @mouseleave.stop="onTagMouseLeave(tag.id)"
             >
               <div class="prompt-tag-edit">
@@ -447,10 +435,6 @@
                     <icon-svg name="wrap" />
                   </div>
                 </template>
-                <!--<template v-else-if="tag.type === 'favorite'">
-                                </template>
-                                <template v-else-if="tag.type === 'history'">
-                                </template>-->
                 <template v-else>
                   <div
                     v-show="!editing[tag.id]"
@@ -485,12 +469,6 @@
                     @keydown="onTagInputKeyDown(tag.id, $event)"
                     @change="onTagInputChange(tag.id, $event)"
                   ></textarea>
-                  <!--<input v-show="editing[tag.id]" type="text"
-                                           class="scroll-hide svelte-4xt1ch input-tag-edit"
-                                           :ref="'promptTagEdit-' + tag.id" :placeholder="getLang('enter_to_save')"
-                                           :value="tag.value" @blur="onTagInputBlur(tag.id)"
-                                           @keydown="onTagInputKeyDown(tag.id, $event)"
-                                           @change="onTagInputChange(tag.id, $event)">-->
                 </template>
                 <div
                   class="btn-tag-delete"
@@ -656,11 +634,6 @@
             @mouseup.stop=""
           ></div>
         </div>
-        <!--<div class="prompt-append">
-                    <input type="text" class="scroll-hide svelte-4xt1ch input-tag-append" ref="promptTagAppend"
-                           v-model="appendTag" :placeholder="getLang('please_enter_new_keyword')"
-                           v-tooltip="getLang('enter_to_add')" @keydown="onAppendTagKeyDown">
-                </div>-->
         <div
           class="drop-select-bg"
           ref="dropSelectBg"
@@ -873,9 +846,6 @@
                         </div>
                       </div>
                       <div class="tags-size-item">
-                        <!--<input class="size-range" type="range" min="10" max="1000" step="1"
-                                                       :value="extraNetworksWidth"
-                                                       @change="$emit('update:extraNetworksWidth', $event.target.value)"/>-->
                         <input
                           class="size-number"
                           type="number"
@@ -895,9 +865,6 @@
                         </div>
                       </div>
                       <div class="tags-size-item">
-                        <!--<input class="size-range" type="range" min="10" max="1000" step="1"
-                                                       :value="extraNetworksHeight"
-                                                       @change="$emit('update:extraNetworksHeight', $event.target.value)"/>-->
                         <input
                           class="size-number"
                           type="number"
@@ -1215,22 +1182,14 @@ export default {
 
       sortable: null,
       droping: false,
-      loading: {},
       editing: {},
       isEditing: false,
       colorRefreshKey: 0, // Key to force re-rendering when colors change
 
       // Performance optimization flags
-      _updatingPrompt: false,
       _performanceMode: false,
       _lastPromptLength: 0,
     };
-  },
-  computed: {
-    isEnglish() {
-      return true;
-    },
-
   },
   watch: {
     loras: {
@@ -1919,13 +1878,6 @@ export default {
         if (tag.value && this._setTag) {
           this._setTag(tag);
         }
-
-        // Force renderTag to be called again by updating a reactive property
-        // This ensures the HTML content is regenerated with new colors
-        tag.renderKey = Date.now() + Math.random();
-
-        // Force Vue reactivity by updating tag properties
-        tag.colorUpdateKey = Date.now();
 
       });
 

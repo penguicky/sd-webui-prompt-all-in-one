@@ -16,7 +16,6 @@
                         <div v-if="tag.type && tag.type === 'wrap'" class="item-wrap"></div>
                         <div v-else class="item-tag">
                             <div class="item-tag-value">{{ tag.value }}</div>
-                            <div class="item-tag-local-value"></div>
                         </div>
                     </template>
                 </div>
@@ -81,7 +80,6 @@ import waitTick from '@/utils/waitTick';
 export default {
     components: {IconSvg},
     props: {},
-    mixins: [],
     data() {
         return {
             favoriteKey: '',
